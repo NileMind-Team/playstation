@@ -5,11 +5,49 @@ import {
   LogOut,
   Settings,
   UserCircle,
+  Users as UsersIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../redux/slices/loginSlice";
+import Swal from "sweetalert2";
+import axiosInstance from "../api/axiosInstance";
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [checkingAdmin, setCheckingAdmin] = useState(false);
+
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const user = useSelector((state) => state.login?.user) || null;
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get("/api/Account/Profile");
+        setUserProfile(response.data);
+
+        if (response.data?.roles?.includes("Admin")) {
+          setIsAdmin(true);
+        }
+      } catch (error) {
+        console.error("خطأ في جلب بيانات الملف الشخصي:", error);
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
+        setCheckingAdmin(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
@@ -17,6 +55,66 @@ export default function Header() {
 
   const closeDropdown = () => {
     setIsDropdownOpen(false);
+  };
+
+  const handleLogout = () => {
+    closeDropdown();
+
+    Swal.fire({
+      title: "تأكيد تسجيل الخروج",
+      text: "هل أنت متأكد من تسجيل الخروج؟",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "نعم، سجل الخروج",
+      cancelButtonText: "إلغاء",
+      background: "#0f172a",
+      color: "#e2e8f0",
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(logout());
+        navigate("/login");
+
+        Swal.fire({
+          title: "تم تسجيل الخروج",
+          text: "تم تسجيل خروجك بنجاح",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+          background: "#0f172a",
+          color: "#e2e8f0",
+        });
+      }
+    });
+  };
+
+  const getDisplayName = () => {
+    if (userProfile?.userName) {
+      return userProfile.userName;
+    }
+    if (user?.userName) {
+      return user.userName;
+    }
+    return "مدير النظام";
+  };
+
+  const getUserRole = () => {
+    if (userProfile?.roles?.length > 0) {
+      return userProfile.roles.includes("Admin") ? "مدير النظام" : "مستخدم";
+    }
+
+    if (user?.roles?.includes("Admin")) {
+      return "مدير النظام";
+    }
+
+    return "مستخدم";
+  };
+
+  const goToUsersPage = () => {
+    closeDropdown();
+    navigate("/users");
   };
 
   return (
@@ -51,8 +149,21 @@ export default function Header() {
             </div>
           </div>
           <div className="text-left">
-            <p className="font-semibold text-white">مدير النظام</p>
-            <p className="text-xs text-gray-400/70">Admin Panel</p>
+            {loading ? (
+              <>
+                <p className="font-semibold text-white animate-pulse">
+                  جاري التحميل...
+                </p>
+                <p className="text-xs text-gray-400/70 animate-pulse">
+                  Loading
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-white">{getDisplayName()}</p>
+                <p className="text-xs text-gray-400/70">{getUserRole()}</p>
+              </>
+            )}
           </div>
           <ChevronDown
             size={18}
@@ -65,7 +176,7 @@ export default function Header() {
         </button>
 
         <div
-          className={`absolute right-0 top-full mt-2 w-48 bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl border border-gray-700/50 backdrop-blur-sm shadow-2xl shadow-black/30 transition-all duration-300 z-50 ${
+          className={`absolute right-0 top-full mt-2 w-56 bg-gradient-to-b from-gray-900 to-gray-800 rounded-xl border border-gray-700/50 backdrop-blur-sm shadow-2xl shadow-black/30 transition-all duration-300 z-50 ${
             isDropdownOpen
               ? "opacity-100 visible transform translate-y-0"
               : "opacity-0 invisible transform translate-y-2"
@@ -81,6 +192,19 @@ export default function Header() {
               </div>
               <span>الملف الشخصي</span>
             </button>
+
+            {isAdmin && !loading && (
+              <button
+                onClick={goToUsersPage}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+              >
+                <div className="p-1.5 bg-indigo-500/10 rounded-md">
+                  <UsersIcon size={16} className="text-indigo-400" />
+                </div>
+                <span>إدارة المستخدمين</span>
+              </button>
+            )}
+
             <button
               onClick={closeDropdown}
               className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
@@ -92,7 +216,7 @@ export default function Header() {
             </button>
             <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-2"></div>
             <button
-              onClick={closeDropdown}
+              onClick={handleLogout}
               className="flex items-center gap-3 px-4 py-3 text-sm text-red-300 hover:text-red-200 hover:bg-red-900/20 rounded-lg transition-colors w-full text-left"
             >
               <div className="p-1.5 bg-red-500/10 rounded-md">
