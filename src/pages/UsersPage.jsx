@@ -156,8 +156,6 @@ const UsersPage = () => {
         color: "#e2e8f0",
         backdrop: "rgba(0, 0, 0, 0.7)",
         willClose: () => {
-          // لا نغلق المودال هنا، فقط نغلق رسالة الخطأ
-          // المودال يبقى مفتوحاً للسماح للمستخدم بتصحيح البيانات
         },
       });
     }
@@ -334,7 +332,7 @@ const UsersPage = () => {
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-indigo-500/25 active:scale-[0.98]"
               >
                 <UserPlus size={18} />
-                <span>إضافة مستخدم</span>
+                <span>إضافة مستخدم جديد</span>
               </button>
             </div>
           </div>

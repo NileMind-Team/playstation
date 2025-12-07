@@ -12,7 +12,7 @@ import {
   Save,
   X,
   AlertCircle,
-  DollarSign,
+  Banknote,
   Power,
   PowerOff,
   CheckCircle,
@@ -163,12 +163,8 @@ const RoomsPage = () => {
         background: "#0f172a",
         color: "#e2e8f0",
         backdrop: "rgba(0, 0, 0, 0.7)",
-        willClose: () => {
-          // لا نغلق المودال هنا، فقط نغلق رسالة الخطأ
-          // المودال يبقى مفتوحاً للسماح للمستخدم بتصحيح البيانات
-        },
+        willClose: () => {},
       });
-      // لا نغلق المودال هنا حتى يبقى المستخدم يمكنه تصحيح البيانات
     }
   };
 
@@ -226,12 +222,8 @@ const RoomsPage = () => {
         background: "#0f172a",
         color: "#e2e8f0",
         backdrop: "rgba(0, 0, 0, 0.7)",
-        willClose: () => {
-          // لا نغلق المودال هنا، فقط نغلق رسالة الخطأ
-          // المودال يبقى مفتوحاً للسماح للمستخدم بتصحيح البيانات
-        },
+        willClose: () => {},
       });
-      // لا نغلق المودال هنا حتى يبقى المستخدم يمكنه تصحيح البيانات
     }
   };
 
@@ -414,7 +406,6 @@ const RoomsPage = () => {
             </div>
           </div>
 
-          {/* Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
             <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl p-4 border border-gray-700/50 backdrop-blur-sm">
               <div className="flex items-center justify-between">
@@ -473,7 +464,7 @@ const RoomsPage = () => {
                   </th>
                   <th className="py-4 px-6 text-right text-gray-300 font-semibold">
                     <div className="flex items-center gap-2">
-                      <DollarSign size={16} />
+                      <Banknote size={16} />
                       سعر الساعة (ج.م)
                     </div>
                   </th>
@@ -645,7 +636,6 @@ const RoomsPage = () => {
           </div>
         </div>
 
-        {/* Add Room Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div ref={modalRef} className="relative w-full max-w-md">
@@ -708,7 +698,7 @@ const RoomsPage = () => {
                   <div>
                     <label className="block text-gray-300 mb-2 text-sm">
                       <div className="flex items-center gap-2">
-                        <DollarSign size={16} />
+                        <Banknote size={16} />
                         سعر الساعة (ج.م) *
                       </div>
                     </label>
@@ -837,7 +827,6 @@ const RoomsPage = () => {
           </div>
         )}
 
-        {/* Edit Room Modal */}
         {showEditModal && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div ref={editModalRef} className="relative w-full max-w-md">
@@ -903,7 +892,7 @@ const RoomsPage = () => {
                   <div>
                     <label className="block text-gray-300 mb-2 text-sm">
                       <div className="flex items-center gap-2">
-                        <DollarSign size={16} />
+                        <Banknote size={16} />
                         سعر الساعة (ج.م) *
                       </div>
                     </label>
