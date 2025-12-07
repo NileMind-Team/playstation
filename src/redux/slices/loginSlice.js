@@ -40,10 +40,13 @@ const loginSlice = createSlice({
       localStorage.removeItem("user");
 
       Swal.fire({
-        icon: "info",
-        title: "Logged out successfully",
+        title: "تم تسجيل الخروج",
+        text: "تم تسجيل خروجك بنجاح",
+        icon: "success",
         showConfirmButton: false,
         timer: 1500,
+        background: "#0f172a",
+        color: "#e2e8f0",
       });
     },
   },
@@ -72,16 +75,25 @@ const loginSlice = createSlice({
           localStorage.setItem("user", JSON.stringify(state.user));
 
           Swal.fire({
+            title: "تم تسجيل الدخول بنجاح",
+            text: "مرحباً بك في النظام",
             icon: "success",
-            title: "Login successful",
             showConfirmButton: false,
             timer: 1500,
+            background: "#0f172a",
+            color: "#e2e8f0",
           });
         } else {
           Swal.fire({
+            title: "بيانات الدخول غير صحيحة",
+            text: "يرجى التحقق من اسم المستخدم وكلمة المرور",
             icon: "error",
-            title: "Invalid credentials",
-            text: "Please check your username and password",
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "حاول مرة أخرى",
+            background: "#0f172a",
+            color: "#e2e8f0",
+            reverseButtons: true,
           });
         }
       })
@@ -91,11 +103,17 @@ const loginSlice = createSlice({
         state.error = action.payload;
 
         Swal.fire({
-          icon: "error",
-          title: "An error occurred",
+          title: "حدث خطأ",
           text:
             action.payload?.message ||
-            "Please check your connection or try again later",
+            "يرجى التحقق من اتصالك بالإنترنت أو المحاولة مرة أخرى لاحقاً",
+          icon: "error",
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#3085d6",
+          confirmButtonText: "حاول مرة أخرى",
+          background: "#0f172a",
+          color: "#e2e8f0",
+          reverseButtons: true,
         });
       });
   },

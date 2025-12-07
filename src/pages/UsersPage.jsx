@@ -167,7 +167,6 @@ const UsersPage = () => {
   };
 
   const handleDeleteUser = (userName) => {
-    // التحقق إذا كان المستخدم يحاول حذف نفسه
     if (userName === currentUserProfile?.userName) {
       Swal.fire({
         icon: "warning",
@@ -179,7 +178,6 @@ const UsersPage = () => {
       return;
     }
 
-    // التحقق إذا كان المستخدم يحاول حذف حساب "admin" الرئيسي
     if (userName.toLowerCase() === "admin") {
       Swal.fire({
         icon: "warning",
