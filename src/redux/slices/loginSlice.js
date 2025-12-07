@@ -21,6 +21,93 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+const translateErrorMessage = (errorData, useHTML = true) => {
+  if (!errorData) return "حدث خطأ غير معروف";
+
+  if (Array.isArray(errorData.errors)) {
+    const error = errorData.errors[0];
+    switch (error.code) {
+      case "User.InvalidCredentials":
+        return "اسم المستخدم أو كلمة المرور غير صحيحة";
+      default:
+        return error.description || "حدث خطأ في المصادقة";
+    }
+  }
+
+  if (errorData.errors && typeof errorData.errors === "object") {
+    const errorMessages = [];
+
+    if (errorData.errors.UserName) {
+      errorData.errors.UserName.forEach((msg) => {
+        if (msg.includes("letters, numbers, and underscores")) {
+          errorMessages.push(
+            "اسم المستخدم يجب أن يحتوي فقط على أحرف و أرقام وشرطة سفلية"
+          );
+        } else if (msg.includes("required")) {
+          errorMessages.push("اسم المستخدم مطلوب");
+        } else {
+          errorMessages.push(msg);
+        }
+      });
+    }
+
+    if (errorData.errors.Password) {
+      errorData.errors.Password.forEach((msg) => {
+        if (msg.includes("at least 6 characters")) {
+          errorMessages.push("كلمة المرور يجب أن تحتوي على الأقل 6 أحرف");
+        } else if (msg.includes("required")) {
+          errorMessages.push("كلمة المرور مطلوبة");
+        } else {
+          errorMessages.push(msg);
+        }
+      });
+    }
+
+    Object.keys(errorData.errors).forEach((key) => {
+      if (key !== "UserName" && key !== "Password") {
+        errorData.errors[key].forEach((msg) => {
+          errorMessages.push(msg);
+        });
+      }
+    });
+
+    if (errorMessages.length > 1) {
+      if (useHTML) {
+        const htmlMessages = errorMessages.map(
+          (msg) =>
+            `<div style="direction: rtl; text-align: right; margin-bottom: 8px; padding-right: 15px; position: relative;">
+             ${msg}
+             <span style="position: absolute; right: 0; top: 0;">-</span>
+           </div>`
+        );
+        return htmlMessages.join("");
+      } else {
+        return errorMessages.map((msg) => `${msg} -`).join("<br>");
+      }
+    } else if (errorMessages.length === 1) {
+      return errorMessages[0];
+    } else {
+      return "بيانات غير صالحة";
+    }
+  }
+
+  if (typeof errorData.message === "string") {
+    const msg = errorData.message.toLowerCase();
+    if (msg.includes("invalid") || msg.includes("credentials")) {
+      return "اسم المستخدم أو كلمة المرور غير صحيحة";
+    }
+    if (msg.includes("network") || msg.includes("internet")) {
+      return "يرجى التحقق من اتصالك بالإنترنت";
+    }
+    if (msg.includes("timeout") || msg.includes("time out")) {
+      return "انتهت المهلة، يرجى المحاولة مرة أخرى";
+    }
+    return errorData.message;
+  }
+
+  return "حدث خطأ غير متوقع";
+};
+
 const loginSlice = createSlice({
   name: "login",
   initialState: {
@@ -102,11 +189,11 @@ const loginSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
 
+        const translatedMessage = translateErrorMessage(action.payload, true);
+
         Swal.fire({
           title: "حدث خطأ",
-          text:
-            action.payload?.message ||
-            "يرجى التحقق من اتصالك بالإنترنت أو المحاولة مرة أخرى لاحقاً",
+          html: translatedMessage,
           icon: "error",
           confirmButtonColor: "#d33",
           cancelButtonColor: "#3085d6",

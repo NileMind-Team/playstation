@@ -31,10 +31,6 @@ const Login = () => {
       errors.userName = "اسم المستخدم مطلوب";
     }
 
-    if (formData.password && formData.password.length < 6) {
-      errors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
-    }
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
