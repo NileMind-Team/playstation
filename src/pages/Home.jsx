@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
-import { PlusCircle, Users } from "lucide-react";
+import { useState } from "react";
+import { PlusCircle } from "lucide-react";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
 import StatsCards from "../components/StatsCards";
 import AddSessionForm from "../components/AddSessionForm";
 import SessionCard from "../components/SessionCard";
 import RoomsStatus from "../components/RoomsStatus";
-import { useNavigate } from "react-router-dom";
-import axiosInstance from "../api/axiosInstance";
 
 import {
   getCurrentDate,
@@ -17,9 +15,6 @@ import {
 } from "../utils/arabicNumbers";
 
 export default function Home() {
-  const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(true);
 
   const [sessions, setSessions] = useState([
     {
@@ -107,32 +102,6 @@ export default function Home() {
     startTime: "",
     endTime: "",
   });
-
-  useEffect(() => {
-    const checkAdminPermissions = async () => {
-      try {
-        setLoadingProfile(true);
-        const response = await axiosInstance.get("/api/Account/Profile");
-
-        if (response.data?.roles?.includes("Admin")) {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error("خطأ في التحقق من صلاحيات المستخدم:", error);
-        setIsAdmin(false);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-
-    checkAdminPermissions();
-  }, []);
-
-  const goToUsersPage = () => {
-    navigate("/users");
-  };
 
   const handleAddSession = (e) => {
     e.preventDefault();
@@ -314,18 +283,6 @@ export default function Home() {
           stats={{ activeSessionsCount, todaySessions, tomorrowSessions }}
         />
       </div>
-
-      {!loadingProfile && isAdmin && (
-        <div className="mb-6">
-          <button
-            onClick={goToUsersPage}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 px-5 py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95 shadow-lg hover:shadow-indigo-500/25"
-          >
-            <Users size={20} />
-            <span>إدارة المستخدمين</span>
-          </button>
-        </div>
-      )}
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">الجلسات النشطة حالياً</h2>

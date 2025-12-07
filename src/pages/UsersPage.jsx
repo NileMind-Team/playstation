@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Users as UsersIcon,
@@ -21,6 +21,7 @@ import Swal from "sweetalert2";
 
 const UsersPage = () => {
   const navigate = useNavigate();
+  const modalRef = useRef(null);
 
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -36,12 +37,40 @@ const UsersPage = () => {
     roles: ["Cashier"],
   });
   const [formErrors, setFormErrors] = useState({});
+  const [currentUserProfile, setCurrentUserProfile] = useState(null);
+
+  const isAddButtonDisabled = () => {
+    return (
+      !formData.userName.trim() ||
+      !formData.password.trim() ||
+      formData.password.length < 6 ||
+      formData.roles.length === 0
+    );
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowAddModal(false);
+      }
+    };
+
+    if (showAddModal) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showAddModal]);
 
   useEffect(() => {
     const checkAdminPermissions = async () => {
       try {
         setLoadingProfile(true);
         const response = await axiosInstance.get("/api/Account/Profile");
+
+        setCurrentUserProfile(response.data);
 
         if (response.data?.roles?.includes("Admin")) {
           setIsAdmin(true);
@@ -138,12 +167,24 @@ const UsersPage = () => {
   };
 
   const handleDeleteUser = (userName) => {
-    const currentUserProfile = JSON.parse(localStorage.getItem("user")) || {};
-    if (userName === currentUserProfile.userName) {
+    // التحقق إذا كان المستخدم يحاول حذف نفسه
+    if (userName === currentUserProfile?.userName) {
       Swal.fire({
         icon: "warning",
         title: "غير مسموح",
         text: "لا يمكنك حذف حسابك الخاص",
+        background: "#0f172a",
+        color: "#e2e8f0",
+      });
+      return;
+    }
+
+    // التحقق إذا كان المستخدم يحاول حذف حساب "admin" الرئيسي
+    if (userName.toLowerCase() === "admin") {
+      Swal.fire({
+        icon: "warning",
+        title: "غير مسموح",
+        text: "لا يمكن حذف حساب Admin الرئيسي",
         background: "#0f172a",
         color: "#e2e8f0",
       });
@@ -193,13 +234,19 @@ const UsersPage = () => {
     });
   };
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.roles.some((role) =>
-        role.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-  );
+  const sortedAndFilteredUsers = users
+    .filter(
+      (user) =>
+        user.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.roles.some((role) =>
+          role.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+    )
+    .sort((a, b) => {
+      if (a.userName === currentUserProfile?.userName) return -1;
+      if (b.userName === currentUserProfile?.userName) return 1;
+      return 0;
+    });
 
   if (loadingProfile) {
     return (
@@ -211,37 +258,25 @@ const UsersPage = () => {
     );
   }
 
-  const getCurrentUserName = () => {
-    const savedUser = JSON.parse(localStorage.getItem("user"));
-    return savedUser?.userName || "";
-  };
-
-  const currentUserName = getCurrentUserName();
-
   return (
     <div
       dir="rtl"
       className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 md:p-6"
     >
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex justify-start">
-          <button
-            onClick={() => navigate("/")}
-            className="relative group flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 hover:border-indigo-500 transition-all duration-300"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-            <ArrowLeft
-              size={20}
-              className="text-gray-300 group-hover:text-indigo-300 transition-colors"
-            />
-            <div className="absolute -bottom-8 right-1/2 transform translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <span className="text-xs text-gray-400 whitespace-nowrap">
-                العودة
-              </span>
-            </div>
-          </button>
-        </div>
+      <button
+        onClick={() => navigate("/")}
+        className="fixed md:absolute top-4 md:top-6 left-4 md:left-6 z-10 group flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 hover:border-indigo-500 transition-all duration-300 shadow-lg"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+        <ArrowLeft
+          size={20}
+          className="text-gray-300 group-hover:text-indigo-300 transition-colors"
+        />
+        <div className="absolute -right-14 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap"></div>
+      </button>
 
+      <div className="max-w-7xl mx-auto pt-2">
+        {" "}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex items-center gap-4">
@@ -252,10 +287,12 @@ const UsersPage = () => {
                 </div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent pb-1">
+                  {" "}
                   إدارة المستخدمين
                 </h1>
-                <p className="text-gray-400 mt-2">
+                <p className="text-gray-400 mt-2 md:mt-3">
+                  {" "}
                   إدارة حسابات المستخدمين والأذونات في النظام
                 </p>
               </div>
@@ -271,7 +308,7 @@ const UsersPage = () => {
                   placeholder="بحث باسم المستخدم أو الدور..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full md:w-64 bg-gray-800/60 border border-gray-600 rounded-xl py-3 pr-10 pl-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full md:w-80 bg-gray-800/60 border border-gray-600 rounded-xl py-3 pr-10 pl-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
 
@@ -293,7 +330,6 @@ const UsersPage = () => {
             </div>
           </div>
         </div>
-
         <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -322,16 +358,23 @@ const UsersPage = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="3" className="py-12 text-center">
-                      <div className="flex justify-center">
-                        <div className="w-10 h-10 border-3 border-gray-600 border-t-indigo-500 rounded-full animate-spin"></div>
+                    <td colSpan="3" className="py-16 text-center">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="relative">
+                          <div className="w-16 h-16 border-4 border-gray-700/30 rounded-full"></div>
+                          <div className="absolute top-0 left-0 w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                            <UsersIcon size={20} className="text-indigo-400" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-2 w-32 bg-gray-700 rounded-full animate-pulse"></div>
+                          <div className="h-2 w-24 bg-gray-700 rounded-full animate-pulse"></div>
+                        </div>
                       </div>
-                      <p className="text-gray-400 mt-4">
-                        جاري تحميل بيانات المستخدمين...
-                      </p>
                     </td>
                   </tr>
-                ) : filteredUsers.length === 0 ? (
+                ) : sortedAndFilteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan="3" className="py-12 text-center">
                       <div className="flex flex-col items-center gap-3">
@@ -341,20 +384,51 @@ const UsersPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((user, index) => (
+                  sortedAndFilteredUsers.map((user, index) => (
                     <tr
                       key={user.id}
-                      className="border-b border-gray-700/30 hover:bg-gray-800/30 transition-colors"
+                      className={`border-b border-gray-700/30 hover:bg-gray-800/30 transition-colors ${
+                        user.userName === currentUserProfile?.userName
+                          ? "bg-gradient-to-r from-indigo-900/20 to-purple-900/20"
+                          : ""
+                      }`}
                     >
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 rounded-lg">
-                            <UserIcon size={18} className="text-indigo-400" />
+                          <div
+                            className={`p-2 rounded-lg ${
+                              user.userName === currentUserProfile?.userName
+                                ? "bg-gradient-to-br from-indigo-500/30 to-purple-500/30"
+                                : user.userName.toLowerCase() === "admin"
+                                ? "bg-gradient-to-br from-amber-500/30 to-orange-500/30"
+                                : "bg-gradient-to-br from-indigo-600/20 to-purple-600/20"
+                            }`}
+                          >
+                            <UserIcon
+                              size={18}
+                              className={
+                                user.userName === currentUserProfile?.userName
+                                  ? "text-indigo-300"
+                                  : user.userName.toLowerCase() === "admin"
+                                  ? "text-amber-400"
+                                  : "text-indigo-400"
+                              }
+                            />
                           </div>
-                          <div>
+                          <div className="flex items-center gap-2">
                             <p className="font-medium text-white">
                               {user.userName}
                             </p>
+                            {user.userName === currentUserProfile?.userName && (
+                              <span className="px-2 py-1 bg-indigo-500/20 text-indigo-300 text-xs rounded-full border border-indigo-500/30">
+                                المستخدم الحالي
+                              </span>
+                            )}
+                            {user.userName.toLowerCase() === "admin" && (
+                              <span className="px-2 py-1 bg-amber-500/20 text-amber-300 text-xs rounded-full border border-amber-500/30">
+                                حساب رئيسي
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -381,16 +455,22 @@ const UsersPage = () => {
                           <button
                             onClick={() => handleDeleteUser(user.userName)}
                             className={`p-2 rounded-lg border transition-all duration-300 ${
-                              user.userName === currentUserName
+                              user.userName === currentUserProfile?.userName ||
+                              user.userName.toLowerCase() === "admin"
                                 ? "bg-gray-700/20 border-gray-600/30 text-gray-500 cursor-not-allowed"
                                 : "bg-gradient-to-r from-red-600/20 to-red-700/20 border-red-600/30 text-red-400 hover:text-red-300 hover:border-red-500/50"
                             }`}
                             title={
-                              user.userName === currentUserName
+                              user.userName === currentUserProfile?.userName
                                 ? "لا يمكن حذف حسابك الخاص"
+                                : user.userName.toLowerCase() === "admin"
+                                ? "لا يمكن حذف حساب Admin الرئيسي"
                                 : "حذف المستخدم"
                             }
-                            disabled={user.userName === currentUserName}
+                            disabled={
+                              user.userName === currentUserProfile?.userName ||
+                              user.userName.toLowerCase() === "admin"
+                            }
                           >
                             <Trash2 size={18} />
                           </button>
@@ -403,10 +483,9 @@ const UsersPage = () => {
             </table>
           </div>
         </div>
-
         {showAddModal && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="relative w-full max-w-md">
+            <div ref={modalRef} className="relative w-full max-w-md">
               <div className="absolute -inset-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl blur-xl opacity-30"></div>
               <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
                 <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-900/80 to-gray-800/80">
@@ -482,7 +561,7 @@ const UsersPage = () => {
                           if (formErrors.password)
                             setFormErrors({ ...formErrors, password: "" });
                         }}
-                        className="w-full bg-gray-800/60 border border-gray-600 rounded-xl py-3 pr-12 pl-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="w-full bg-gray-800/60 border border-gray-600 rounded-xl py-3 px-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                         placeholder="أدخل كلمة المرور"
                       />
                       <button
@@ -503,9 +582,6 @@ const UsersPage = () => {
                         </p>
                       )}
                     </div>
-                    <p className="text-gray-500 text-xs mt-2">
-                      يجب أن تكون كلمة المرور 6 أحرف على الأقل
-                    </p>
                   </div>
 
                   <div>
@@ -556,7 +632,12 @@ const UsersPage = () => {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2"
+                      disabled={isAddButtonDisabled()}
+                      className={`flex-1 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                        isAddButtonDisabled()
+                          ? "bg-gradient-to-r from-gray-700 to-gray-600 text-gray-400 cursor-not-allowed"
+                          : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700"
+                      }`}
                     >
                       <UserPlus size={18} />
                       إضافة المستخدم
