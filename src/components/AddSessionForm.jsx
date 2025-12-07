@@ -55,7 +55,7 @@ export default function AddSessionForm({
             </h3>
             <p className="text-gray-300 text-sm flex items-center">
               <Info size={14} className="ml-1 text-blue-400" />
-              أضف جلسة PlayStation جديدة للعميل
+              أضف جلسة جديدة للعميل
             </p>
           </div>
         </div>

@@ -6,6 +6,7 @@ import StatsCards from "../components/StatsCards";
 import AddSessionForm from "../components/AddSessionForm";
 import SessionCard from "../components/SessionCard";
 import RoomsStatus from "../components/RoomsStatus";
+import CashierModal from "../components/CashierModal";
 
 import {
   getCurrentDate,
@@ -15,7 +16,6 @@ import {
 } from "../utils/arabicNumbers";
 
 export default function Home() {
-
   const [sessions, setSessions] = useState([
     {
       id: 1,
@@ -102,6 +102,46 @@ export default function Home() {
     startTime: "",
     endTime: "",
   });
+
+  const [cashierState, setCashierState] = useState({
+    isOpen: false,
+    currentSession: null,
+  });
+
+  const handleOpenCashier = (session) => {
+    setCashierState({
+      isOpen: true,
+      currentSession: session,
+    });
+  };
+
+  const handleCloseCashier = () => {
+    setCashierState({
+      isOpen: false,
+      currentSession: null,
+    });
+  };
+
+  const handleConfirmOrder = (sessionId, cartItems, totalAmount) => {
+    console.log("Order confirmed:", {
+      sessionId,
+      cartItems,
+      totalAmount,
+      timestamp: new Date().toISOString(),
+    });
+
+    setSessions((prevSessions) =>
+      prevSessions.map((session) =>
+        session.id === sessionId
+          ? {
+              ...session,
+              hasOrder: true,
+              orderTotal: totalAmount,
+            }
+          : session
+      )
+    );
+  };
 
   const handleAddSession = (e) => {
     e.preventDefault();
@@ -311,12 +351,19 @@ export default function Home() {
             session={session}
             handleDeleteSession={handleDeleteSession}
             getCurrentDate={getCurrentDate}
+            onOpenCashier={handleOpenCashier}
           />
         ))}
       </div>
 
       <RoomsStatus availableRooms={availableRooms} />
 
+      <CashierModal
+        isOpen={cashierState.isOpen}
+        onClose={handleCloseCashier}
+        session={cashierState.currentSession}
+        onConfirmOrder={handleConfirmOrder}
+      />
     </div>
   );
 }

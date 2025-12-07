@@ -149,10 +149,10 @@ export default function Header() {
         </div>
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-500 bg-clip-text text-transparent">
-            نظام حجز جلسات PlayStation
+            نظام حجز جلسات
           </h1>
           <p className="text-gray-400/80 text-sm mt-1 flex items-center">
-            نظام متكامل لإدارة جلسات الألعاب
+            نظام متكامل لإدارة الجلسات
           </p>
         </div>
       </div>

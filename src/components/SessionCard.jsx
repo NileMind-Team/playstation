@@ -5,12 +5,13 @@ import {
   UserCircle,
   Phone,
   Trash2,
+  ShoppingCart,
 } from "lucide-react";
 
 export default function SessionCard({
   session,
   handleDeleteSession,
-  getCurrentDate,
+  onOpenCashier,
 }) {
   return (
     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] group relative">
@@ -83,10 +84,18 @@ export default function SessionCard({
           </div>
         </div>
 
-        <div className="flex justify-center">
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => onOpenCashier(session)}
+            className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-xl transition hover:scale-105"
+          >
+            <ShoppingCart size={18} className="ml-2" />
+            <span>فتح الكاشير</span>
+          </button>
+
           <button
             onClick={() => handleDeleteSession(session.id, session.roomNumber)}
-            className="flex items-center justify-center bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-6 py-3 rounded-xl transition w-full"
+            className="flex items-center justify-center bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 py-3 rounded-xl transition hover:scale-105"
           >
             <Trash2 size={18} className="ml-2" />
             <span>حذف الجلسة</span>

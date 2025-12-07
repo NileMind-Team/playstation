@@ -369,7 +369,7 @@ const RoomsPage = () => {
                   إدارة الغرف
                 </h1>
                 <p className="text-gray-400 mt-2 md:mt-3">
-                  إدارة غرف PlayStation والتكاليف والجلسات
+                  إدارة غرف والتكاليف والجلسات
                 </p>
               </div>
             </div>

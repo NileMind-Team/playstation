@@ -1,5 +1,5 @@
 const apiConfig = {
-  baseURL: "https://cyberplay.runasp.net",
+  baseURL: "https://cyberplay.tryasp.net",
 };
 
 export default apiConfig;
