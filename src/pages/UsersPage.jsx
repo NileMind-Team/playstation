@@ -49,22 +49,6 @@ const UsersPage = () => {
   };
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        setShowAddModal(false);
-      }
-    };
-
-    if (showAddModal) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showAddModal]);
-
-  useEffect(() => {
     const checkAdminPermissions = async () => {
       try {
         setLoadingProfile(true);
@@ -110,8 +94,12 @@ const UsersPage = () => {
         icon: "error",
         title: "خطأ",
         text: "فشل في جلب بيانات المستخدمين",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
       });
     } finally {
       setLoading(false);
@@ -150,6 +138,7 @@ const UsersPage = () => {
         showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
       });
 
       setShowAddModal(false);
@@ -160,8 +149,16 @@ const UsersPage = () => {
         icon: "error",
         title: "خطأ",
         text: error.response?.data?.message || "فشل في إضافة المستخدم",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+        willClose: () => {
+          // لا نغلق المودال هنا، فقط نغلق رسالة الخطأ
+          // المودال يبقى مفتوحاً للسماح للمستخدم بتصحيح البيانات
+        },
       });
     }
   };
@@ -172,8 +169,12 @@ const UsersPage = () => {
         icon: "warning",
         title: "غير مسموح",
         text: "لا يمكنك حذف حسابك الخاص",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
       });
       return;
     }
@@ -183,8 +184,12 @@ const UsersPage = () => {
         icon: "warning",
         title: "غير مسموح",
         text: "لا يمكن حذف حساب Admin الرئيسي",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
       });
       return;
     }
@@ -200,6 +205,7 @@ const UsersPage = () => {
       cancelButtonText: "إلغاء",
       background: "#0f172a",
       color: "#e2e8f0",
+      backdrop: "rgba(0, 0, 0, 0.7)",
       reverseButtons: true,
     }).then(async (result) => {
       if (result.isConfirmed) {
@@ -216,6 +222,7 @@ const UsersPage = () => {
             showConfirmButton: false,
             background: "#0f172a",
             color: "#e2e8f0",
+            backdrop: "rgba(0, 0, 0, 0.7)",
           });
 
           fetchUsers();
@@ -224,8 +231,12 @@ const UsersPage = () => {
             icon: "error",
             title: "خطأ",
             text: "فشل في حذف المستخدم",
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false,
             background: "#0f172a",
             color: "#e2e8f0",
+            backdrop: "rgba(0, 0, 0, 0.7)",
           });
         }
       }

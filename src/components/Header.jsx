@@ -5,6 +5,8 @@ import {
   LogOut,
   Users as UsersIcon,
   Tag,
+  Package,
+  Home,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -111,6 +113,11 @@ export default function Header() {
     return "مستخدم";
   };
 
+  const goToHome = () => {
+    closeDropdown();
+    navigate("/");
+  };
+
   const goToUsersPage = () => {
     closeDropdown();
     navigate("/users");
@@ -119,6 +126,16 @@ export default function Header() {
   const goToItemTypesPage = () => {
     closeDropdown();
     navigate("/item-types");
+  };
+
+  const goToItemsPage = () => {
+    closeDropdown();
+    navigate("/items");
+  };
+
+  const goToRoomsPage = () => {
+    closeDropdown();
+    navigate("/rooms");
   };
 
   return (
@@ -187,6 +204,16 @@ export default function Header() {
           }`}
         >
           <div className="p-2">
+            <button
+              onClick={goToHome}
+              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+            >
+              <div className="p-1.5 bg-blue-500/10 rounded-md">
+                <Home size={16} className="text-blue-400" />
+              </div>
+              <span>الصفحة الرئيسية</span>
+            </button>
+
             {isAdmin && !loading && (
               <>
                 <button
@@ -208,6 +235,27 @@ export default function Header() {
                   </div>
                   <span>أنواع المنتجات</span>
                 </button>
+
+                <button
+                  onClick={goToItemsPage}
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+                >
+                  <div className="p-1.5 bg-amber-500/10 rounded-md">
+                    <Package size={16} className="text-amber-400" />
+                  </div>
+                  <span>إدارة المنتجات</span>
+                </button>
+
+                <button
+                  onClick={goToRoomsPage}
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+                >
+                  <div className="p-1.5 bg-violet-500/10 rounded-md">
+                    <Home size={16} className="text-violet-400" />
+                  </div>
+                  <span>إدارة الغرف</span>
+                </button>
+
                 <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-2"></div>
               </>
             )}

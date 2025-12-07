@@ -50,25 +50,6 @@ const ItemTypesPage = () => {
   };
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
-        setShowAddModal(false);
-      }
-      if (
-        editModalRef.current &&
-        !editModalRef.current.contains(event.target)
-      ) {
-        setShowEditModal(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
     const checkAdminPermissions = async () => {
       try {
         setLoadingProfile(true);
@@ -103,8 +84,12 @@ const ItemTypesPage = () => {
         icon: "error",
         title: "خطأ",
         text: "فشل في جلب بيانات أنواع المنتجات",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
       });
     } finally {
       setLoading(false);
@@ -139,6 +124,7 @@ const ItemTypesPage = () => {
         showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
       });
 
       setShowAddModal(false);
@@ -150,8 +136,14 @@ const ItemTypesPage = () => {
         icon: "error",
         title: "خطأ",
         text: error.response?.data?.message || "فشل في إضافة نوع المنتج",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+        willClose: () => {
+        },
       });
     }
   };
@@ -181,6 +173,7 @@ const ItemTypesPage = () => {
         showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
       });
 
       setShowEditModal(false);
@@ -193,8 +186,14 @@ const ItemTypesPage = () => {
         icon: "error",
         title: "خطأ",
         text: error.response?.data?.message || "فشل في تحديث نوع المنتج",
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
         background: "#0f172a",
         color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+        willClose: () => {
+        },
       });
     }
   };
@@ -211,6 +210,7 @@ const ItemTypesPage = () => {
       cancelButtonText: "إلغاء",
       background: "#0f172a",
       color: "#e2e8f0",
+      backdrop: "rgba(0, 0, 0, 0.7)",
       reverseButtons: true,
     }).then(async (result) => {
       if (result.isConfirmed) {
@@ -225,6 +225,7 @@ const ItemTypesPage = () => {
             showConfirmButton: false,
             background: "#0f172a",
             color: "#e2e8f0",
+            backdrop: "rgba(0, 0, 0, 0.7)",
           });
 
           fetchItemTypes();
@@ -233,8 +234,12 @@ const ItemTypesPage = () => {
             icon: "error",
             title: "خطأ",
             text: "فشل في حذف نوع المنتج",
+            timer: 2000,
+            timerProgressBar: true,
+            showConfirmButton: false,
             background: "#0f172a",
             color: "#e2e8f0",
+            backdrop: "rgba(0, 0, 0, 0.7)",
           });
         }
       }
