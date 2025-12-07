@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useEffect } from "react";
-import Footer from "./components/Footer";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import UsersPage from "./pages/UsersPage";
@@ -9,8 +8,6 @@ import UsersPage from "./pages/UsersPage";
 function App() {
   const location = useLocation();
   const { isLogged } = useSelector((state) => state.login);
-
-  const shouldShowNavbarFooter = location.pathname !== "/login";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -38,7 +35,6 @@ function App() {
           />
         </Routes>
       </main>
-      {shouldShowNavbarFooter && <Footer />}
     </div>
   );
 }

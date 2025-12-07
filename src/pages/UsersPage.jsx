@@ -4,17 +4,17 @@ import {
   Users as UsersIcon,
   UserPlus,
   Trash2,
-  Edit,
+  ArrowLeft,
   Eye,
   EyeOff,
   Shield,
   Search,
   RefreshCw,
-  CheckCircle,
   XCircle,
   User as UserIcon,
   Key,
   AlertCircle,
+  DollarSign,
 } from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 import Swal from "sweetalert2";
@@ -23,6 +23,7 @@ const UsersPage = () => {
   const navigate = useNavigate();
 
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -32,7 +33,7 @@ const UsersPage = () => {
   const [formData, setFormData] = useState({
     userName: "",
     password: "",
-    roles: ["User"],
+    roles: ["Cashier"],
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -60,6 +61,15 @@ const UsersPage = () => {
     checkAdminPermissions();
   }, [navigate]);
 
+  const fetchRoles = async () => {
+    try {
+      const response = await axiosInstance.get("/api/Roles/GetAll");
+      setRoles(response.data);
+    } catch (error) {
+      console.error("خطأ في جلب الأدوار:", error);
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -82,6 +92,7 @@ const UsersPage = () => {
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
+      fetchRoles();
     }
   }, [isAdmin]);
 
@@ -113,7 +124,7 @@ const UsersPage = () => {
       });
 
       setShowAddModal(false);
-      setFormData({ userName: "", password: "", roles: ["User"] });
+      setFormData({ userName: "", password: "", roles: ["Cashier"] });
       fetchUsers();
     } catch (error) {
       Swal.fire({
@@ -127,6 +138,18 @@ const UsersPage = () => {
   };
 
   const handleDeleteUser = (userName) => {
+    const currentUserProfile = JSON.parse(localStorage.getItem("user")) || {};
+    if (userName === currentUserProfile.userName) {
+      Swal.fire({
+        icon: "warning",
+        title: "غير مسموح",
+        text: "لا يمكنك حذف حسابك الخاص",
+        background: "#0f172a",
+        color: "#e2e8f0",
+      });
+      return;
+    }
+
     Swal.fire({
       title: "تأكيد الحذف",
       text: `هل أنت متأكد من حذف المستخدم "${userName}"؟`,
@@ -188,33 +211,36 @@ const UsersPage = () => {
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <div className="p-6 bg-gradient-to-br from-red-900/30 to-red-800/20 rounded-2xl border border-red-700/50 mb-6">
-            <Shield size={64} className="text-red-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-red-300 mb-2">
-              غير مصرح لك
-            </h2>
-            <p className="text-gray-400">
-              ليس لديك صلاحيات للوصول إلى هذه الصفحة
-            </p>
-          </div>
-          <button
-            onClick={() => navigate("/")}
-            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-semibold text-white hover:from-indigo-700 hover:to-purple-700 transition-all"
-          >
-            العودة للرئيسية
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const getCurrentUserName = () => {
+    const savedUser = JSON.parse(localStorage.getItem("user"));
+    return savedUser?.userName || "";
+  };
+
+  const currentUserName = getCurrentUserName();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 md:p-6">
+    <div
+      dir="rtl"
+      className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 md:p-6"
+    >
       <div className="max-w-7xl mx-auto">
+        <div className="mb-6 flex justify-start">
+          <button
+            onClick={() => navigate("/")}
+            className="relative group flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-gray-800 to-gray-900 border border-gray-700 hover:border-indigo-500 transition-all duration-300"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+            <ArrowLeft
+              size={20}
+              className="text-gray-300 group-hover:text-indigo-300 transition-colors"
+            />
+            <div className="absolute -bottom-8 right-1/2 transform translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span className="text-xs text-gray-400 whitespace-nowrap">
+                العودة
+              </span>
+            </div>
+          </button>
+        </div>
 
         <div className="mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -236,7 +262,6 @@ const UsersPage = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* ✅ حقل البحث */}
               <div className="relative">
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <Search size={18} className="text-gray-500" />
@@ -288,13 +313,7 @@ const UsersPage = () => {
                   </th>
                   <th className="py-4 px-6 text-right text-gray-300 font-semibold">
                     <div className="flex items-center gap-2">
-                      <CheckCircle size={16} />
-                      الحالة
-                    </div>
-                  </th>
-                  <th className="py-4 px-6 text-right text-gray-300 font-semibold">
-                    <div className="flex items-center gap-2">
-                      <Edit size={16} />
+                      <Trash2 size={16} />
                       الإجراءات
                     </div>
                   </th>
@@ -303,7 +322,7 @@ const UsersPage = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="4" className="py-12 text-center">
+                    <td colSpan="3" className="py-12 text-center">
                       <div className="flex justify-center">
                         <div className="w-10 h-10 border-3 border-gray-600 border-t-indigo-500 rounded-full animate-spin"></div>
                       </div>
@@ -314,7 +333,7 @@ const UsersPage = () => {
                   </tr>
                 ) : filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="py-12 text-center">
+                    <td colSpan="3" className="py-12 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <UsersIcon size={48} className="text-gray-600" />
                         <p className="text-gray-400">لا توجد مستخدمين</p>
@@ -336,9 +355,6 @@ const UsersPage = () => {
                             <p className="font-medium text-white">
                               {user.userName}
                             </p>
-                            <p className="text-xs text-gray-500">
-                              ID: {user.id.substring(0, 8)}...
-                            </p>
                           </div>
                         </div>
                       </td>
@@ -351,10 +367,10 @@ const UsersPage = () => {
                               className={`px-3 py-1 rounded-full text-xs font-medium ${
                                 role === "Admin"
                                   ? "bg-red-500/20 text-red-300 border border-red-500/30"
-                                  : "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                               }`}
                             >
-                              {role === "Admin" ? "مدير النظام" : "مستخدم عادي"}
+                              {role === "Admin" ? "مدير النظام" : "كاشير"}
                             </span>
                           ))}
                         </div>
@@ -362,18 +378,19 @@ const UsersPage = () => {
 
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="text-green-400 text-sm">نشط</span>
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-6">
-                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleDeleteUser(user.userName)}
-                            className="p-2 bg-gradient-to-r from-red-600/20 to-red-700/20 rounded-lg border border-red-600/30 text-red-400 hover:text-red-300 hover:border-red-500/50 transition-all duration-300"
-                            title="حذف المستخدم"
-                            disabled={user.userName === "admin"}
+                            className={`p-2 rounded-lg border transition-all duration-300 ${
+                              user.userName === currentUserName
+                                ? "bg-gray-700/20 border-gray-600/30 text-gray-500 cursor-not-allowed"
+                                : "bg-gradient-to-r from-red-600/20 to-red-700/20 border-red-600/30 text-red-400 hover:text-red-300 hover:border-red-500/50"
+                            }`}
+                            title={
+                              user.userName === currentUserName
+                                ? "لا يمكن حذف حسابك الخاص"
+                                : "حذف المستخدم"
+                            }
+                            disabled={user.userName === currentUserName}
                           >
                             <Trash2 size={18} />
                           </button>
@@ -384,23 +401,6 @@ const UsersPage = () => {
                 )}
               </tbody>
             </table>
-          </div>
-
-          <div className="p-4 border-t border-gray-700/50 bg-gradient-to-r from-gray-900/50 to-gray-800/50">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="flex items-center gap-2 text-gray-400">
-                <Shield size={16} />
-                <span className="text-sm">
-                  {filteredUsers.length} مستخدم •{" "}
-                  {
-                    filteredUsers.filter((u) => u.roles.includes("Admin"))
-                      .length
-                  }{" "}
-                  مدير
-                </span>
-              </div>
-              <div className="text-sm text-gray-500">آخر تحديث: الآن</div>
-            </div>
           </div>
         </div>
 
@@ -516,38 +516,33 @@ const UsersPage = () => {
                       </div>
                     </label>
                     <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData({ ...formData, roles: ["Admin"] })
-                        }
-                        className={`p-4 rounded-xl border transition-all ${
-                          formData.roles.includes("Admin")
-                            ? "bg-red-500/20 border-red-500/50 text-red-300"
-                            : "bg-gray-800/60 border-gray-600 text-gray-400 hover:border-gray-500"
-                        }`}
-                      >
-                        <div className="flex flex-col items-center gap-2">
-                          <Shield size={20} />
-                          <span className="font-medium">مدير النظام</span>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormData({ ...formData, roles: ["User"] })
-                        }
-                        className={`p-4 rounded-xl border transition-all ${
-                          formData.roles.includes("User")
-                            ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-300"
-                            : "bg-gray-800/60 border-gray-600 text-gray-400 hover:border-gray-500"
-                        }`}
-                      >
-                        <div className="flex flex-col items-center gap-2">
-                          <UserIcon size={20} />
-                          <span className="font-medium">مستخدم عادي</span>
-                        </div>
-                      </button>
+                      {roles.map((role) => (
+                        <button
+                          key={role.id}
+                          type="button"
+                          onClick={() =>
+                            setFormData({ ...formData, roles: [role.name] })
+                          }
+                          className={`p-4 rounded-xl border transition-all ${
+                            formData.roles.includes(role.name)
+                              ? role.name === "Admin"
+                                ? "bg-red-500/20 border-red-500/50 text-red-300"
+                                : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                              : "bg-gray-800/60 border-gray-600 text-gray-400 hover:border-gray-500"
+                          }`}
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            {role.name === "Admin" ? (
+                              <Shield size={20} />
+                            ) : (
+                              <DollarSign size={20} />
+                            )}
+                            <span className="font-medium">
+                              {role.name === "Admin" ? "مدير النظام" : "كاشير"}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
 

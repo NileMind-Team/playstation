@@ -6,7 +6,6 @@ import StatsCards from "../components/StatsCards";
 import AddSessionForm from "../components/AddSessionForm";
 import SessionCard from "../components/SessionCard";
 import RoomsStatus from "../components/RoomsStatus";
-import Footer from "../components/Footer";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
 
@@ -361,7 +360,6 @@ export default function Home() {
 
       <RoomsStatus availableRooms={availableRooms} />
 
-      <Footer />
     </div>
   );
 }
