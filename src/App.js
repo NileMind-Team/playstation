@@ -7,6 +7,7 @@ import UsersPage from "./pages/UsersPage";
 import ItemTypesPage from "./pages/ItemTypesPage";
 import ItemsPage from "./pages/ItemsPage";
 import RoomsPage from "./pages/RoomsPage";
+import ClientsPage from "./pages/ClientsPage";
 
 function App() {
   const location = useLocation();
@@ -43,6 +44,10 @@ function App() {
           <Route
             path="/rooms"
             element={isLogged ? <RoomsPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/clients"
+            element={isLogged ? <ClientsPage /> : <Navigate to="/login" />}
           />
           <Route
             path="*"

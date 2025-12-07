@@ -7,6 +7,7 @@ import {
   Tag,
   Package,
   Home,
+  Users as ClientsIcon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -138,6 +139,11 @@ export default function Header() {
     navigate("/rooms");
   };
 
+  const goToClientsPage = () => {
+    closeDropdown();
+    navigate("/clients");
+  };
+
   return (
     <header className="flex flex-col md:flex-row justify-between items-center mb-8">
       <div className="flex items-center space-x-reverse space-x-4 mb-6 md:mb-0">
@@ -212,6 +218,16 @@ export default function Header() {
                 <Home size={16} className="text-blue-400" />
               </div>
               <span>الصفحة الرئيسية</span>
+            </button>
+
+            <button
+              onClick={goToClientsPage}
+              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+            >
+              <div className="p-1.5 bg-cyan-500/10 rounded-md">
+                <ClientsIcon size={16} className="text-cyan-400" />
+              </div>
+              <span>العملاء</span>
             </button>
 
             {isAdmin && !loading && (
