@@ -3,9 +3,8 @@ import {
   User,
   ChevronDown,
   LogOut,
-  Settings,
-  UserCircle,
   Users as UsersIcon,
+  Tag,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -117,6 +116,11 @@ export default function Header() {
     navigate("/users");
   };
 
+  const goToItemTypesPage = () => {
+    closeDropdown();
+    navigate("/item-types");
+  };
+
   return (
     <header className="flex flex-col md:flex-row justify-between items-center mb-8">
       <div className="flex items-center space-x-reverse space-x-4 mb-6 md:mb-0">
@@ -183,38 +187,31 @@ export default function Header() {
           }`}
         >
           <div className="p-2">
-            <button
-              onClick={closeDropdown}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
-            >
-              <div className="p-1.5 bg-blue-500/10 rounded-md">
-                <UserCircle size={16} className="text-blue-400" />
-              </div>
-              <span>الملف الشخصي</span>
-            </button>
-
             {isAdmin && !loading && (
-              <button
-                onClick={goToUsersPage}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
-              >
-                <div className="p-1.5 bg-indigo-500/10 rounded-md">
-                  <UsersIcon size={16} className="text-indigo-400" />
-                </div>
-                <span>إدارة المستخدمين</span>
-              </button>
+              <>
+                <button
+                  onClick={goToUsersPage}
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+                >
+                  <div className="p-1.5 bg-indigo-500/10 rounded-md">
+                    <UsersIcon size={16} className="text-indigo-400" />
+                  </div>
+                  <span>إدارة المستخدمين</span>
+                </button>
+
+                <button
+                  onClick={goToItemTypesPage}
+                  className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+                >
+                  <div className="p-1.5 bg-emerald-500/10 rounded-md">
+                    <Tag size={16} className="text-emerald-400" />
+                  </div>
+                  <span>أنواع المنتجات</span>
+                </button>
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-2"></div>
+              </>
             )}
 
-            <button
-              onClick={closeDropdown}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
-            >
-              <div className="p-1.5 bg-emerald-500/10 rounded-md">
-                <Settings size={16} className="text-emerald-400" />
-              </div>
-              <span>الإعدادات</span>
-            </button>
-            <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent my-2"></div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 px-4 py-3 text-sm text-red-300 hover:text-red-200 hover:bg-red-900/20 rounded-lg transition-colors w-full text-left"

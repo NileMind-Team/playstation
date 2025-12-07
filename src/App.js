@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import UsersPage from "./pages/UsersPage";
+import ItemTypesPage from "./pages/ItemTypesPage";
 
 function App() {
   const location = useLocation();
@@ -28,6 +29,10 @@ function App() {
           <Route
             path="/users"
             element={isLogged ? <UsersPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/item-types"
+            element={isLogged ? <ItemTypesPage /> : <Navigate to="/login" />}
           />
           <Route
             path="*"
