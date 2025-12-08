@@ -7,6 +7,7 @@ import AddSessionForm from "../components/AddSessionForm";
 import SessionCard from "../components/SessionCard";
 import RoomsStatus from "../components/RoomsStatus";
 import CashierModal from "../components/CashierModal";
+import DrinksCashier from "../components/DrinksCashier";
 
 import {
   getCurrentDate,
@@ -107,6 +108,8 @@ export default function Home() {
     isOpen: false,
     currentSession: null,
   });
+
+  const [activeTab, setActiveTab] = useState("sessions");
 
   const handleOpenCashier = (session) => {
     setCashierState({
@@ -315,55 +318,63 @@ export default function Home() {
       dir="rtl"
       className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-4 md:p-6"
     >
-      <Header />
+      <Header activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="flex flex-col lg:flex-row gap-6 mb-8">
-        <SearchBar />
-        <StatsCards
-          stats={{ activeSessionsCount, todaySessions, tomorrowSessions }}
-        />
-      </div>
+      {activeTab === "sessions" ? (
+        <>
+          <div className="flex flex-col lg:flex-row gap-6 mb-8">
+            <SearchBar />
+            <StatsCards
+              stats={{ activeSessionsCount, todaySessions, tomorrowSessions }}
+            />
+          </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">الجلسات النشطة حالياً</h2>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center space-x-reverse space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-5 py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
-        >
-          <PlusCircle size={20} />
-          <span>إضافة جلسة جديدة</span>
-        </button>
-      </div>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">الجلسات النشطة حالياً</h2>
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="flex items-center space-x-reverse space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-5 py-3 rounded-xl font-medium transition-all hover:scale-105 active:scale-95"
+            >
+              <PlusCircle size={20} />
+              <span>إضافة جلسة جديدة</span>
+            </button>
+          </div>
 
-      <AddSessionForm
-        showAddForm={showAddForm}
-        setShowAddForm={setShowAddForm}
-        newSession={newSession}
-        setNewSession={setNewSession}
-        availableRooms={availableRooms}
-        handleAddSession={handleAddSession}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sessions.map((session) => (
-          <SessionCard
-            key={session.id}
-            session={session}
-            handleDeleteSession={handleDeleteSession}
-            getCurrentDate={getCurrentDate}
-            onOpenCashier={handleOpenCashier}
+          <AddSessionForm
+            showAddForm={showAddForm}
+            setShowAddForm={setShowAddForm}
+            newSession={newSession}
+            setNewSession={setNewSession}
+            availableRooms={availableRooms}
+            handleAddSession={handleAddSession}
           />
-        ))}
-      </div>
 
-      <RoomsStatus availableRooms={availableRooms} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sessions.map((session) => (
+              <SessionCard
+                key={session.id}
+                session={session}
+                handleDeleteSession={handleDeleteSession}
+                getCurrentDate={getCurrentDate}
+                onOpenCashier={handleOpenCashier}
+              />
+            ))}
+          </div>
 
-      <CashierModal
-        isOpen={cashierState.isOpen}
-        onClose={handleCloseCashier}
-        session={cashierState.currentSession}
-        onConfirmOrder={handleConfirmOrder}
-      />
+          <RoomsStatus availableRooms={availableRooms} />
+
+          <CashierModal
+            isOpen={cashierState.isOpen}
+            onClose={handleCloseCashier}
+            session={cashierState.currentSession}
+            onConfirmOrder={handleConfirmOrder}
+          />
+        </>
+      ) : (
+        <>
+          <DrinksCashier />
+        </>
+      )}
     </div>
   );
 }
