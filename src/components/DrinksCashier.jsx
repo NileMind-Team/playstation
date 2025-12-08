@@ -322,7 +322,7 @@ export default function DrinksCashier() {
                     <div className="w-14 h-14 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 border border-gray-600">
                       {product.imageUrl ? (
                         <img
-                          src={`http://workspace.runasp.net/${product.imageUrl}`}
+                          src={`https://localhost:7110/${product.imageUrl}`}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           onError={(e) => {
@@ -384,7 +384,7 @@ export default function DrinksCashier() {
                       <div className="w-12 h-12 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 border border-gray-600">
                         {item.imageUrl ? (
                           <img
-                            src={`http://workspace.runasp.net/${item.imageUrl}`}
+                            src={`https://cyberplay.runasp.net/${item.imageUrl}`}
                             alt={item.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {

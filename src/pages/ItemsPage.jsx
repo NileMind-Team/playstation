@@ -57,7 +57,7 @@ const ItemsPage = () => {
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const BASE_URL = "http://workspace.runasp.net/";
+  const BASE_URL = "https://cyberplay.runasp.net/";
 
   useEffect(() => {
     const checkAdminPermissions = async () => {
