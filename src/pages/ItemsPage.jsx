@@ -494,14 +494,12 @@ const ItemsPage = () => {
     }
   };
 
-  const sortedAndFilteredItems = items
-    .filter(
-      (item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.itemType.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.notes?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const filteredItems = items.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.itemType.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.notes?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loadingProfile) {
     return (
@@ -598,7 +596,7 @@ const ItemsPage = () => {
               </div>
             </div>
           </div>
-        ) : sortedAndFilteredItems.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <div className="col-span-full">
             <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-700/50 shadow-2xl p-12 text-center">
               <Package size={64} className="text-gray-600 mx-auto mb-4" />
@@ -614,7 +612,7 @@ const ItemsPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {sortedAndFilteredItems.map((item) => (
+            {filteredItems.map((item) => (
               <div
                 key={item.id}
                 className={`group w-[360px] relative overflow-hidden bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-700/50 shadow-xl hover:shadow-2xl hover:shadow-amber-900/20 transition-all duration-500 hover:-translate-y-1 flex flex-col`}

@@ -1,5 +1,12 @@
-import { useState, useEffect } from "react";
-import { ShoppingCart, Check, Trash2, Plus, Minus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  ShoppingCart,
+  Check,
+  Trash2,
+  Plus,
+  Minus,
+  Printer,
+} from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 import Swal from "sweetalert2";
 
@@ -11,6 +18,9 @@ export default function DrinksCashier() {
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("");
+  const [lastReceiptData, setLastReceiptData] = useState(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const printFrameRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,6 +56,20 @@ export default function DrinksCashier() {
     };
 
     fetchData();
+
+    const printFrame = document.createElement("iframe");
+    printFrame.style.display = "none";
+    printFrame.style.position = "absolute";
+    printFrame.style.top = "-9999px";
+    printFrame.style.left = "-9999px";
+    document.body.appendChild(printFrame);
+    printFrameRef.current = printFrame;
+
+    return () => {
+      if (printFrameRef.current) {
+        document.body.removeChild(printFrameRef.current);
+      }
+    };
   }, []);
 
   const fetchProductsByType = async (typeId) => {
@@ -171,7 +195,7 @@ export default function DrinksCashier() {
     });
   };
 
-  const handleConfirmOrder = () => {
+  const handleConfirmOrder = async (printReceipt = false) => {
     if (cart.length === 0) {
       Swal.fire({
         icon: "warning",
@@ -187,29 +211,295 @@ export default function DrinksCashier() {
       return;
     }
 
-    const totalAmount = calculateTotal();
-    const orderData = {
-      items: cart,
-      totalAmount,
-      timestamp: new Date().toISOString(),
-      type: "drinks_order",
-    };
+    try {
+      const totalAmount = calculateTotal();
 
-    console.log("Drinks Order:", orderData);
+      Swal.fire({
+        title: "جاري تأكيد الطلب...",
+        text: "يرجى الانتظار",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+      });
 
-    Swal.fire({
-      icon: "success",
-      title: "تم تأكيد الطلب",
-      html: `تم تأكيد الطلب النقدي بقيمة <strong>${totalAmount}</strong> ج.م`,
-      timer: 3000,
-      timerProgressBar: true,
-      showConfirmButton: false,
-      background: "#0f172a",
-      color: "#e2e8f0",
-      backdrop: "rgba(0, 0, 0, 0.7)",
+      const requestData = {
+        notes: "",
+        items: cart.map((item) => ({
+          itemId: item.id,
+          quantity: item.quantity,
+        })),
+      };
+
+      const response = await axiosInstance.post(
+        "/api/DirectSales/Add",
+        requestData
+      );
+
+      const receiptData = {
+        id: response.data.id || Date.now(),
+        items: cart,
+        totalAmount,
+        notes: "",
+        date: new Date().toLocaleString("ar-EG", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+        orderNumber: `ORD-${Date.now().toString().slice(-6)}`,
+      };
+
+      setLastReceiptData(receiptData);
+
+      Swal.close();
+
+      if (printReceipt && receiptData) {
+        setIsPrinting(true);
+        await handlePrintReceipt(receiptData);
+        setIsPrinting(false);
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "تم تأكيد الطلب بنجاح",
+        html: `
+          <div style="text-align: right;">
+            <p>تم تأكيد الطلب النقدي بنجاح</p>
+             <p><strong>عدد المنتجات:</strong> ${cart.length}</p>
+            <p><strong>الإجمالي:</strong> ${totalAmount} ج.م</p>
+          </div>
+        `,
+        timer: 3000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+      });
+
+      setCart([]);
+    } catch (error) {
+      Swal.close();
+
+      Swal.fire({
+        icon: "error",
+        title: "خطأ في تأكيد الطلب",
+        text: "حدث خطأ أثناء تأكيد الطلب. يرجى المحاولة مرة أخرى.",
+        timer: 3000,
+        showConfirmButton: true,
+        confirmButtonText: "حاول مرة أخرى",
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+      });
+      console.error("Error confirming order:", error);
+    }
+  };
+
+  const handleConfirmAndPrint = () => {
+    handleConfirmOrder(true);
+  };
+
+  const handlePrintReceipt = async (receiptData = null) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const dataToPrint = receiptData || lastReceiptData;
+
+        if (!dataToPrint) {
+          Swal.fire({
+            icon: "warning",
+            title: "لا توجد فاتورة",
+            text: "لا توجد فاتورة متاحة للطباعة",
+            timer: 2000,
+            showConfirmButton: false,
+            background: "#0f172a",
+            color: "#e2e8f0",
+            backdrop: "rgba(0, 0, 0, 0.7)",
+          });
+          reject(new Error("No receipt data available"));
+          return;
+        }
+
+        const receiptContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فاتورة مبيعات</title>
+<style>
+  @media print {
+    @page { margin: 0; size: 80mm auto; }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Arial', sans-serif;
+      font-size: 13px;
+      font-weight: bold;
+      width: 70mm;
+    }
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+  body {
+    margin: 0; padding: 10px; 
+    font-family: 'Arial', sans-serif;
+    font-size: 13px; 
+    font-weight: bold; 
+    width: 70mm; background: white; color: black;
+  }
+  .header { text-align: center; margin-bottom: 12px; border-bottom: 1px dashed #000; padding: 12px 0; }
+  .header h1 { margin: 0; font-size: 18px; font-weight: bold; }
+  .header h2 { margin: 3px 0; font-size: 16px; font-weight: bold; }
+  .info { width: 100%; margin: 12px 0; text-align: right; font-size: 12px; }
+  .info div { margin: 6px 0; }
+
+  .items-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; table-layout: fixed; }
+  .items-table th, .items-table td {
+    border-bottom: 1px dashed #ccc;
+    padding: 6px 3px; 
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .items-table th { border-bottom: 1px solid #000; }
+
+  .items-table th:nth-child(1), .items-table td:nth-child(1) { width: 5%; text-align: center; }
+  .items-table th:nth-child(2), .items-table td:nth-child(2) { width: 12%; text-align: center; }
+  .items-table th:nth-child(3), .items-table td:nth-child(3) { width: 28%; text-align: center; }
+  .items-table th:nth-child(4), .items-table td:nth-child(4) { width: 20%; text-align: center; }
+  .items-table th:nth-child(5), .items-table td:nth-child(5) { width: 20%; text-align: center; }
+
+  .total-section { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #000; text-align: right; font-size: 12px; }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 4px 0;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .total-row span:first-child {
+  }
+
+  .total-row span:last-child {
+    margin-left: 10px;
+  }
+  .final-total { font-size: 14px; margin-top: 4px; font-weight: bold; color: #000; }
+  .footer { margin-top: 12px; padding-top: 8px; border-top: 1px dashed #000; text-align: center; font-size: 10px; }
+  .thank-you { font-size: 14px; font-weight: bold; margin: 6px 0; text-align: center; }
+  .barcode { text-align: center; margin: 6px 0; }
+  .notes { margin-top: 6px; padding: 6px; border: 1px dashed #000; font-size: 10px; text-align: right; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Workspace</h1>
+  <div>تلفون: 0123456789</div>
+  <div>العنوان: العنوان التجاري</div>
+</div>
+
+<div class="info">
+  <div>رقم الفاتورة: ${dataToPrint.orderNumber}</div>
+  <div>التاريخ: ${dataToPrint.date}</div>
+  <div>نوع الدفع: نقدي</div>
+</div>
+
+<table class="items-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>الكمية</th>
+      <th>الصنف</th>
+      <th>السعر</th>
+      <th>الإجمالي</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${dataToPrint.items
+      .map(
+        (item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${item.quantity}</td>
+          <td>${item.name}</td>
+          <td>${item.price} ج.م</td>
+          <td>${item.totalPrice} ج.م</td>
+        </tr>
+      `
+      )
+      .join("")}
+  </tbody>
+</table>
+
+<div class="total-section">
+  <div class="total-row"><span>عدد الأصناف:</span><span>${
+    dataToPrint.items.length
+  }</span></div>
+  <div class="total-row"><span>إجمالي الكمية:</span><span>${dataToPrint.items.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  )}</span></div>
+  <div class="total-row"><span>المبلغ الإجمالي:</span><span>${
+    dataToPrint.totalAmount
+  } ج.م</span></div>
+  <div class="total-row final-total"><span>المبلغ المستحق:</span><span>${
+    dataToPrint.totalAmount
+  } ج.م</span></div>
+</div>
+
+<div class="thank-you">شكراً لزيارتكم</div>
+
+<div class="footer">
+  <div>للاستفسار: 0123456789</div>
+  <div>نرجو زيارة المحل مرة أخرى</div>
+  <div>تاريخ الطباعة: ${new Date().toLocaleString("ar-EG")}</div>
+</div>
+
+</body>
+</html>
+`;
+
+        if (printFrameRef.current) {
+          const printFrame = printFrameRef.current;
+          const printWindow = printFrame.contentWindow;
+
+          printWindow.document.open();
+          printWindow.document.write(receiptContent);
+          printWindow.document.close();
+
+          printWindow.onload = () => {
+            try {
+              setTimeout(() => {
+                printWindow.focus();
+
+                printWindow.onbeforeprint = null;
+                printWindow.onafterprint = null;
+
+                printWindow.print();
+
+                setTimeout(() => {
+                  resolve();
+                }, 1000);
+              }, 500);
+            } catch (err) {
+              reject(err);
+            }
+          };
+        } else {
+          reject(new Error("Print frame not available"));
+        }
+      } catch (error) {
+        reject(error);
+      }
     });
-
-    setCart([]);
   };
 
   const filteredProducts = products.filter((product) =>
@@ -224,6 +514,12 @@ export default function DrinksCashier() {
             <h2 className="text-2xl font-bold">كاشير المشروبات</h2>
             <p className="text-gray-400 mt-1">نظام الطلبات النقدية</p>
           </div>
+          {isPrinting && (
+            <div className="flex items-center text-blue-400">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400 mr-2"></div>
+              <span>جاري طباعة الفاتورة...</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -322,7 +618,7 @@ export default function DrinksCashier() {
                     <div className="w-14 h-14 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 border border-gray-600">
                       {product.imageUrl ? (
                         <img
-                          src={`https://localhost:7110/${product.imageUrl}`}
+                          src={`https://cyberplay.runasp.net/${product.imageUrl}`}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           onError={(e) => {
@@ -474,16 +770,36 @@ export default function DrinksCashier() {
 
             <div className="flex gap-4">
               <button
-                onClick={handleConfirmOrder}
-                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-4 rounded-xl font-bold flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg hover:shadow-green-500/25"
+                onClick={() => handleConfirmOrder(false)}
+                disabled={isPrinting}
+                className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-4 rounded-xl font-bold flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg hover:shadow-green-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Check size={20} className="ml-2" />
-                تأكيد الطلب النقدي
+                تأكيد الطلب
               </button>
+
+              <button
+                onClick={handleConfirmAndPrint}
+                disabled={isPrinting}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-4 rounded-xl font-bold flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPrinting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    جاري الطباعة...
+                  </>
+                ) : (
+                  <>
+                    <Printer size={20} className="ml-2" />
+                    تأكيد وطباعة
+                  </>
+                )}
+              </button>
+
               <button
                 onClick={handleEmptyCart}
+                disabled={cart.length === 0 || isPrinting}
                 className="px-6 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
-                disabled={cart.length === 0}
               >
                 إفراغ السلة
               </button>

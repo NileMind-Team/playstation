@@ -336,7 +336,7 @@ export default function CashierModal({
                       <div className="w-14 h-14 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 border border-gray-600">
                         {product.imageUrl ? (
                           <img
-                            src={`https://localhost:7110/${product.imageUrl}`}
+                            src={`https://cyberplay.runasp.net/${product.imageUrl}`}
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => {

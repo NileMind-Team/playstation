@@ -68,52 +68,161 @@ export default function Home() {
 
   const calculateTimerValue = (session) => {
     const now = new Date();
+    const today = new Date();
+
+    const sessionDateStr = toEnglishNumbers(session.date);
+    const [day, month, year] = sessionDateStr.split("-");
+    const sessionDate = new Date(year, month - 1, day);
+
+    const todayDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+
+    const sessionDateOnly = new Date(
+      sessionDate.getFullYear(),
+      sessionDate.getMonth(),
+      sessionDate.getDate()
+    );
 
     const startTimeInMinutes = arabicTimeToMinutes(session.startTime);
+    const hasEndTime =
+      session.endTime && session.endTime !== "٠٠:٠٠" && session.endTime !== "";
+    const endTimeInMinutes = hasEndTime
+      ? arabicTimeToMinutes(session.endTime)
+      : null;
 
-    const startDate = new Date();
-    startDate.setHours(Math.floor(startTimeInMinutes / 60));
-    startDate.setMinutes(startTimeInMinutes % 60);
-    startDate.setSeconds(0);
+    const startDateTime = new Date(sessionDate);
+    startDateTime.setHours(Math.floor(startTimeInMinutes / 60));
+    startDateTime.setMinutes(startTimeInMinutes % 60);
+    startDateTime.setSeconds(0);
 
-    const diffFromStart = Math.floor((now - startDate) / 1000);
+    let endDateTime = null;
+    if (hasEndTime) {
+      endDateTime = new Date(sessionDate);
+      if (endTimeInMinutes < startTimeInMinutes) {
+        endDateTime.setDate(endDateTime.getDate() + 1);
+      }
+      endDateTime.setHours(Math.floor(endTimeInMinutes / 60));
+      endDateTime.setMinutes(endTimeInMinutes % 60);
+      endDateTime.setSeconds(0);
+    }
 
-    if (session.endTime && session.endTime !== "٠٠:٠٠") {
-      const endTimeInMinutes = arabicTimeToMinutes(session.endTime);
+    if (sessionDateOnly > todayDate) {
+      if (hasEndTime) {
+        const timeUntilStart = Math.floor((startDateTime - now) / 1000);
+        const totalDuration = Math.floor((endDateTime - startDateTime) / 1000);
 
-      const endDate = new Date();
-      endDate.setHours(Math.floor(endTimeInMinutes / 60));
-      endDate.setMinutes(endTimeInMinutes % 60);
-      endDate.setSeconds(0);
-
-      const timeRemaining = Math.floor((endDate - now) / 1000);
-
-      if (timeRemaining > 0) {
-        return {
-          type: "countdown",
-          value: timeRemaining,
-          hours: Math.floor(timeRemaining / 3600),
-          minutes: Math.floor((timeRemaining % 3600) / 60),
-          seconds: timeRemaining % 60,
-        };
+        if (timeUntilStart > 0) {
+          return {
+            type: "upcoming",
+            value: totalDuration,
+            hours: Math.floor(totalDuration / 3600),
+            minutes: Math.floor((totalDuration % 3600) / 60),
+            seconds: totalDuration % 60,
+          };
+        }
       } else {
         return {
-          type: "finished",
+          type: "upcoming",
           value: 0,
           hours: 0,
           minutes: 0,
           seconds: 0,
         };
       }
-    } else {
-      return {
-        type: "countup",
-        value: diffFromStart > 0 ? diffFromStart : 0,
-        hours: Math.floor(diffFromStart / 3600),
-        minutes: Math.floor((diffFromStart % 3600) / 60),
-        seconds: diffFromStart % 60,
-      };
     }
+
+    if (sessionDateOnly.getTime() === todayDate.getTime()) {
+      const timeUntilStart = Math.floor((startDateTime - now) / 1000);
+
+      if (timeUntilStart > 0) {
+        if (hasEndTime) {
+          const totalDuration = Math.floor(
+            (endDateTime - startDateTime) / 1000
+          );
+          return {
+            type: "upcoming",
+            value: totalDuration,
+            hours: Math.floor(totalDuration / 3600),
+            minutes: Math.floor((totalDuration % 3600) / 60),
+            seconds: totalDuration % 60,
+          };
+        } else {
+          return {
+            type: "upcoming",
+            value: 0,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+          };
+        }
+      }
+
+      const timeSinceStart = Math.floor((now - startDateTime) / 1000);
+
+      if (hasEndTime) {
+        const timeUntilEnd = Math.floor((endDateTime - now) / 1000);
+
+        if (timeUntilEnd > 0) {
+          return {
+            type: "countdown",
+            value: timeUntilEnd,
+            hours: Math.floor(timeUntilEnd / 3600),
+            minutes: Math.floor((timeUntilEnd % 3600) / 60),
+            seconds: timeUntilEnd % 60,
+          };
+        } else {
+          return {
+            type: "finished",
+            value: 0,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+          };
+        }
+      } else {
+        return {
+          type: "countup",
+          value: timeSinceStart > 0 ? timeSinceStart : 0,
+          hours: Math.floor(timeSinceStart / 3600),
+          minutes: Math.floor((timeSinceStart % 3600) / 60),
+          seconds: timeSinceStart % 60,
+        };
+      }
+    }
+
+    if (sessionDateOnly < todayDate) {
+      if (hasEndTime) {
+        if (now > endDateTime) {
+          return {
+            type: "finished",
+            value: 0,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+          };
+        }
+      } else {
+        const timeSinceStart = Math.floor((now - startDateTime) / 1000);
+        return {
+          type: "countup",
+          value: timeSinceStart > 0 ? timeSinceStart : 0,
+          hours: Math.floor(timeSinceStart / 3600),
+          minutes: Math.floor((timeSinceStart % 3600) / 60),
+          seconds: timeSinceStart % 60,
+        };
+      }
+    }
+
+    return {
+      type: "upcoming",
+      value: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+    };
   };
 
   const fetchSessions = async () => {
@@ -129,7 +238,7 @@ export default function Home() {
         startTime: formatApiTimeToArabic(session.startTime),
         endTime: session.endTime ? formatApiTimeToArabic(session.endTime) : "",
         duration: `${session.totalHours || 0} ساعة`,
-        status: session.status === "Finished" ? "منتهية" : "نشطة",
+        status: session.status,
         date: formatApiDate(session.startTime),
         originalData: session,
       }));
@@ -275,7 +384,7 @@ export default function Home() {
       startTime: newSession.startTime,
       endTime: newSession.endTime,
       duration: calculateDuration(),
-      status: "active",
+      status: "Active",
       date: sessionDate,
     };
 
@@ -333,7 +442,7 @@ export default function Home() {
   };
 
   const activeSessionsCount = sessions.filter(
-    (session) => session.status === "active" || session.status === "نشطة"
+    (session) => session.status === "Active" || session.status === "Pending"
   ).length;
 
   const todaySessions = sessions.filter(

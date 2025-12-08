@@ -41,6 +41,39 @@ export default function SessionCard({
     return num.toString().replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[digit]);
   };
 
+  // دالة جديدة: تحويل حالة الجلسة من الإنجليزية إلى العربية بناءً على الـ status من API
+  const getSessionStatusInfo = (status) => {
+    const statusMap = {
+      Pending: {
+        text: "قيد الانتظار",
+        color: "text-yellow-400",
+        bgColor: "bg-yellow-500/20",
+        dotColor: "bg-yellow-400",
+      },
+      Active: {
+        text: "نشطة",
+        color: "text-green-400",
+        bgColor: "bg-green-500/20",
+        dotColor: "bg-green-400",
+      },
+      Finished: {
+        text: "منتهية",
+        color: "text-red-400",
+        bgColor: "bg-red-500/20",
+        dotColor: "bg-red-400",
+      },
+      Cancelled: {
+        text: "ملغية",
+        color: "text-gray-400",
+        bgColor: "bg-gray-500/20",
+        dotColor: "bg-gray-400",
+      },
+    };
+
+    // إذا كانت الحالة غير معروفة، نستخدم "قيد الانتظار" كحالة افتراضية
+    return statusMap[status] || statusMap["Pending"];
+  };
+
   const getTimerColor = () => {
     if (localTimer.type === "finished") {
       return {
@@ -49,6 +82,15 @@ export default function SessionCard({
         border: "border-red-500/30",
         glow: "shadow-red-500/30",
         animate: "animate-pulse",
+      };
+    }
+
+    if (localTimer.type === "upcoming") {
+      return {
+        text: "text-blue-400",
+        bg: "bg-gradient-to-r from-blue-500/20 to-indigo-600/20",
+        border: "border-blue-500/30",
+        glow: "shadow-blue-500/30",
       };
     }
 
@@ -79,16 +121,42 @@ export default function SessionCard({
       }
     }
 
+    // countup
     return {
-      text: "text-blue-400",
-      bg: "bg-gradient-to-r from-blue-500/20 to-indigo-600/20",
-      border: "border-blue-500/30",
-      glow: "shadow-blue-500/30",
+      text: "text-purple-400",
+      bg: "bg-gradient-to-r from-purple-500/20 to-violet-600/20",
+      border: "border-purple-500/30",
+      glow: "shadow-purple-500/30",
     };
   };
 
   const displayTimer = () => {
     const timerColor = getTimerColor();
+
+    let timerText = "";
+    if (localTimer.type === "upcoming") {
+      if (
+        localTimer.hours === 0 &&
+        localTimer.minutes === 0 &&
+        localTimer.seconds === 0
+      ) {
+        timerText = "٠٠:٠٠:٠٠";
+      } else {
+        timerText = `${toArabicNumbers(
+          formatTime(localTimer.hours)
+        )}:${toArabicNumbers(formatTime(localTimer.minutes))}:${toArabicNumbers(
+          formatTime(localTimer.seconds)
+        )}`;
+      }
+    } else if (localTimer.type === "finished") {
+      timerText = "٠٠:٠٠:٠٠";
+    } else {
+      timerText = `${toArabicNumbers(
+        formatTime(localTimer.hours)
+      )}:${toArabicNumbers(formatTime(localTimer.minutes))}:${toArabicNumbers(
+        formatTime(localTimer.seconds)
+      )}`;
+    }
 
     return (
       <div
@@ -96,31 +164,28 @@ export default function SessionCard({
           timerColor.bg
         } ${
           timerColor.border
-        } border backdrop-blur-sm rounded-full px-6 py-3 flex items-center justify-center z-20 ${
+        } border backdrop-blur-sm rounded-lg px-4 py-2 flex items-center justify-center z-20 ${
           timerColor.glow
-        } shadow-xl ${timerColor.animate || ""}`}
+        } shadow-lg ${timerColor.animate || ""}`}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-10 rounded-full"></div>
-
-        <div className="absolute -inset-2 bg-gradient-to-r from-current via-transparent to-current opacity-5 blur rounded-full"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-10 rounded-lg"></div>
 
         <div
-          className={`relative text-2xl font-bold ${timerColor.text} tracking-wider`}
+          className={`relative text-lg font-bold ${timerColor.text} tracking-wider`}
         >
-          <span className="drop-shadow-lg">
-            {toArabicNumbers(formatTime(localTimer.hours))}:
-            {toArabicNumbers(formatTime(localTimer.minutes))}:
-            {toArabicNumbers(formatTime(localTimer.seconds))}
-          </span>
+          <span className="drop-shadow-lg">{timerText}</span>
         </div>
 
-        <div className="absolute -top-1 -left-1 w-2 h-2 bg-current rounded-full opacity-30"></div>
-        <div className="absolute -top-1 -right-1 w-2 h-2 bg-current rounded-full opacity-30"></div>
-        <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-current rounded-full opacity-30"></div>
-        <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-current rounded-full opacity-30"></div>
+        <div className="absolute -top-1 -left-1 w-1.5 h-1.5 bg-current rounded-full opacity-30"></div>
+        <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-current rounded-full opacity-30"></div>
+        <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-current rounded-full opacity-30"></div>
+        <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 bg-current rounded-full opacity-30"></div>
       </div>
     );
   };
+
+  // الحصول على معلومات حالة الجلسة
+  const statusInfo = getSessionStatusInfo(session.status);
 
   return (
     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] group relative">
@@ -139,9 +204,16 @@ export default function SessionCard({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-green-500/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-            <span className="inline-block w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></span>
-            <span className="text-green-300 text-sm font-medium">نشطة</span>
+          {/* تحديث: عرض حالة الجلسة بناءً على الـ status من API */}
+          <div
+            className={`flex items-center gap-2 ${statusInfo.bgColor} backdrop-blur-sm px-3 py-1.5 rounded-full`}
+          >
+            <span
+              className={`inline-block w-2.5 h-2.5 ${statusInfo.dotColor} rounded-full animate-pulse`}
+            ></span>
+            <span className={`${statusInfo.color} text-sm font-medium`}>
+              {statusInfo.text}
+            </span>
           </div>
         </div>
 
@@ -156,11 +228,11 @@ export default function SessionCard({
         </div>
       </div>
 
-      <div className="relative h-16 border-t border-b border-gray-700/50 bg-gradient-to-r from-gray-800/30 via-gray-900/30 to-gray-800/30">
+      <div className="relative h-12 border-t border-b border-gray-700/50 bg-gradient-to-r from-gray-800/30 via-gray-900/30 to-gray-800/30">
         <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent transform -translate-y-1/2"></div>
 
-        <div className="absolute top-1/2 left-1/4 w-8 h-px bg-gradient-to-r from-transparent to-blue-500/30 transform -translate-y-1/2"></div>
-        <div className="absolute top-1/2 right-1/4 w-8 h-px bg-gradient-to-l from-transparent to-purple-500/30 transform -translate-y-1/2"></div>
+        <div className="absolute top-1/2 left-1/4 w-6 h-px bg-gradient-to-r from-transparent to-blue-500/30 transform -translate-y-1/2"></div>
+        <div className="absolute top-1/2 right-1/4 w-6 h-px bg-gradient-to-l from-transparent to-purple-500/30 transform -translate-y-1/2"></div>
 
         {displayTimer()}
       </div>
