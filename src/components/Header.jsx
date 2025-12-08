@@ -153,7 +153,6 @@ export default function Header({ activeTab, onTabChange }) {
     navigate("/drink-reports");
   };
 
-  // إضافة الدالة الجديدة
   const goToSessionsReportsPage = () => {
     closeDropdown();
     navigate("/sessions-reports");

@@ -15,6 +15,7 @@ import {
   FileSpreadsheet,
   X,
   Coffee,
+  Info,
 } from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 import Swal from "sweetalert2";
@@ -52,6 +53,8 @@ const DrinkReportsPage = () => {
   const [showSaleDetails, setShowSaleDetails] = useState(false);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [showProductsModal, setShowProductsModal] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState([]);
 
   useEffect(() => {
     const checkAdminPermissions = async () => {
@@ -531,6 +534,11 @@ ${
     setDateRange({ ...dateRange, endDate: date });
   };
 
+  const handleShowProducts = (sale) => {
+    setSelectedProducts(sale.items);
+    setShowProductsModal(true);
+  };
+
   if (loadingProfile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
@@ -803,12 +811,18 @@ ${
                       الإجمالي
                     </div>
                   </th>
+                  <th className="py-4 px-6 text-right text-gray-300 font-semibold">
+                    <div className="flex items-center gap-2">
+                      <Info size={16} />
+                      تفاصيل
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="py-16 text-center">
+                    <td colSpan="8" className="py-16 text-center">
                       <div className="flex flex-col items-center gap-4">
                         <div className="relative">
                           <div className="w-16 h-16 border-4 border-gray-700/30 rounded-full"></div>
@@ -826,7 +840,7 @@ ${
                   </tr>
                 ) : filteredSales.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="py-12 text-center">
+                    <td colSpan="8" className="py-12 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <FileText size={48} className="text-gray-600" />
                         <p className="text-gray-400">
@@ -899,6 +913,16 @@ ${
                             </span>
                           </div>
                         </td>
+
+                        <td className="py-4 px-6">
+                          <button
+                            onClick={() => handleShowProducts(sale)}
+                            className="p-2 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 text-blue-300 hover:text-cyan-300 rounded-lg border border-blue-600/30 hover:border-cyan-600/30 transition-all duration-300"
+                            title="عرض تفاصيل المنتجات"
+                          >
+                            <Info size={18} />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })
@@ -907,6 +931,120 @@ ${
             </table>
           </div>
         </div>
+
+        {showProductsModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="relative w-full max-w-2xl">
+              <div className="absolute -inset-3 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 rounded-3xl blur-xl opacity-30"></div>
+              <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
+                <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-900/80 to-gray-800/80">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-lg">
+                        <ShoppingBag size={20} className="text-cyan-400" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white">
+                        تفاصيل المنتجات المباعة
+                      </h2>
+                    </div>
+                    <button
+                      onClick={() => setShowProductsModal(false)}
+                      className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-700/50">
+                            <th className="py-3 px-4 text-right text-gray-300 font-semibold">
+                              المنتج
+                            </th>
+                            <th className="py-3 px-4 text-right text-gray-300 font-semibold">
+                              النوع
+                            </th>
+                            <th className="py-3 px-4 text-right text-gray-300 font-semibold">
+                              الكمية
+                            </th>
+                            <th className="py-3 px-4 text-right text-gray-300 font-semibold">
+                              سعر الوحدة
+                            </th>
+                            <th className="py-3 px-4 text-right text-gray-300 font-semibold">
+                              الإجمالي
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedProducts.map((item, index) => (
+                            <tr
+                              key={item.id}
+                              className="border-b border-gray-700/30 hover:bg-gray-800/30 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-gradient-to-br from-teal-600/20 to-emerald-600/20 rounded-lg">
+                                    <ShoppingBag
+                                      size={16}
+                                      className="text-teal-400"
+                                    />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-white">
+                                      {item.item.name}
+                                    </p>
+                                    {item.item.notes && (
+                                      <p className="text-xs text-gray-400">
+                                        {item.item.notes}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-1 bg-gradient-to-r from-amber-600/20 to-orange-600/20 text-amber-300 rounded text-xs border border-amber-600/30">
+                                  {item.item.itemType.name}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="font-bold text-white">
+                                  {item.quantity}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="text-gray-300">
+                                  {formatCurrency(item.unitPrice)}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="font-bold text-emerald-400">
+                                  {formatCurrency(item.totalPrice)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end mt-6">
+                    <button
+                      onClick={() => setShowProductsModal(false)}
+                      className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-600 rounded-xl font-semibold text-white hover:from-gray-600 hover:to-gray-500 transition-all duration-300"
+                    >
+                      إغلاق
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showSaleDetails && selectedSale && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">

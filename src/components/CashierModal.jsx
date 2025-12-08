@@ -16,14 +16,22 @@ export default function CashierModal({
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("");
+  const [sessionData, setSessionData] = useState(null);
+  const [loadingSessionData, setLoadingSessionData] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !session?.id) return;
 
     const fetchData = async () => {
       try {
         setLoading(true);
         setLoadingTypes(true);
+        setLoadingSessionData(true);
+
+        const sessionResponse = await axiosInstance.get(
+          `/api/Sessions/Get/${session.id}`
+        );
+        setSessionData(sessionResponse.data);
 
         const typesResponse = await axiosInstance.get("/api/ItemTypes/GetAll");
         const fetchedTypes = typesResponse.data;
@@ -49,6 +57,7 @@ export default function CashierModal({
         });
       } finally {
         setLoading(false);
+        setLoadingSessionData(false);
       }
     };
 
@@ -56,7 +65,7 @@ export default function CashierModal({
 
     setCart([]);
     setSearchTerm("");
-  }, [isOpen]);
+  }, [isOpen, session?.id]);
 
   const fetchProductsByType = async (typeId) => {
     try {
@@ -181,7 +190,7 @@ export default function CashierModal({
     });
   };
 
-  const handleConfirmOrder = () => {
+  const handleConfirmOrder = async () => {
     if (cart.length === 0) {
       Swal.fire({
         icon: "warning",
@@ -197,22 +206,77 @@ export default function CashierModal({
       return;
     }
 
-    const totalAmount = calculateTotal();
-    onConfirmOrder(session?.id, cart, totalAmount);
+    try {
+      Swal.fire({
+        title: "جاري تأكيد الطلب...",
+        text: "يرجى الانتظار",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+      });
 
-    Swal.fire({
-      icon: "success",
-      title: "تم تأكيد الطلب",
-      html: `تم تأكيد الطلب للجلسة <strong>${session?.id}</strong> بقيمة <strong>${totalAmount}</strong> ج.م`,
-      timer: 3000,
-      timerProgressBar: true,
-      showConfirmButton: false,
-      background: "#0f172a",
-      color: "#e2e8f0",
-      backdrop: "rgba(0, 0, 0, 0.7)",
-    });
+      const requestData = {
+        endTime: sessionData?.endTime || null,
+        discount: sessionData?.discount || 0,
+        notes: sessionData?.notes || "",
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
+      };
 
-    onClose();
+      await axiosInstance.put(
+        `/api/Sessions/Update/${session.id}`,
+        requestData
+      );
+
+      Swal.close();
+
+      const totalAmount = calculateTotal();
+      onConfirmOrder(session?.id, cart, totalAmount);
+
+      Swal.fire({
+        icon: "success",
+        title: "تم تأكيد الطلب",
+        html: `
+          <div style="text-align: right;">
+            <p>تم تأكيد الطلب للجلسة <strong>${session?.roomNumber}</strong></p>
+            <p><strong>العميل:</strong> ${session?.customerName}</p>
+            <p><strong>عدد المنتجات:</strong> ${cart.length}</p>
+            <p><strong>الإجمالي:</strong> ${totalAmount} ج.م</p>
+          </div>
+        `,
+        timer: 3000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+      });
+
+      onClose();
+    } catch (error) {
+      console.error("Error confirming order:", error);
+      Swal.close();
+
+      Swal.fire({
+        icon: "error",
+        title: "خطأ في تأكيد الطلب",
+        text: `حدث خطأ أثناء تأكيد الطلب: ${
+          error.response?.data?.message || error.message
+        }`,
+        timer: 3000,
+        showConfirmButton: true,
+        confirmButtonText: "حاول مرة أخرى",
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+      });
+    }
   };
 
   const filteredProducts = products.filter((product) =>
@@ -231,6 +295,12 @@ export default function CashierModal({
               <p className="text-gray-400">
                 {session?.customerName} - {session?.roomNumber}
               </p>
+              {sessionData && (
+                <p className="text-sm text-gray-400 mt-1">
+                  خصم الجلسة: {sessionData.discount || 0} ج.م | السعر:{" "}
+                  {sessionData.sessionPrice || 0} ج.م
+                </p>
+              )}
             </div>
             <button
               onClick={onClose}
@@ -286,7 +356,7 @@ export default function CashierModal({
               </div>
             </div>
 
-            {loading ? (
+            {loading || loadingSessionData ? (
               <div className="flex items-center justify-center py-32">
                 <div className="text-center">
                   <div className="relative inline-block">

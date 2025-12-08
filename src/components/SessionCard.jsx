@@ -8,6 +8,7 @@ import {
   Trash2,
   ShoppingCart,
   Edit,
+  CheckCircle,
 } from "lucide-react";
 
 export default function SessionCard({
@@ -16,6 +17,7 @@ export default function SessionCard({
   handleDeleteSession,
   onOpenCashier,
   onOpenEditModal,
+  onCompleteSession,
 }) {
   const [localTimer, setLocalTimer] = useState({
     hours: 0,
@@ -43,18 +45,15 @@ export default function SessionCard({
     return num.toString().replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[digit]);
   };
 
-  // دالة جديدة: تنسيق المدة العشرية
   const formatDuration = (durationStr) => {
     if (!durationStr) return "٠ ساعة";
 
-    // تحويل "X ساعة" إلى رقم
     const match = durationStr.match(/([\d.]+)\s*ساعة/);
     if (!match) return durationStr;
 
     const number = parseFloat(match[1]);
     if (isNaN(number)) return durationStr;
 
-    // إذا كان رقم عشري، أخذ أول 3 أرقام بعد الفاصلة
     if (number % 1 !== 0) {
       const decimalPart = number.toString().split(".")[1] || "";
       const roundedDecimal = decimalPart.slice(0, 3);
@@ -90,6 +89,12 @@ export default function SessionCard({
         color: "text-gray-400",
         bgColor: "bg-gray-500/20",
         dotColor: "bg-gray-400",
+      },
+      Payed: {
+        text: "مدفوعة",
+        color: "text-blue-400",
+        bgColor: "bg-blue-500/20",
+        dotColor: "bg-blue-400",
       },
     };
 
@@ -143,7 +148,6 @@ export default function SessionCard({
       }
     }
 
-    // countup
     return {
       text: "text-purple-400",
       bg: "bg-gradient-to-r from-purple-500/20 to-violet-600/20",
@@ -232,7 +236,8 @@ export default function SessionCard({
               className={`inline-block w-2.5 h-2.5 ${statusInfo.dotColor} rounded-full animate-pulse`}
             ></span>
             <span className={`${statusInfo.color} text-sm font-medium`}>
-              {statusInfo.text}
+              {session.statusText || statusInfo.text}{" "}
+              {/* ✅ استخدام statusText */}
             </span>
           </div>
         </div>
@@ -296,13 +301,21 @@ export default function SessionCard({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-4 gap-3">
           <button
             onClick={() => onOpenCashier(session)}
             className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-xl transition hover:scale-105"
           >
             <ShoppingCart size={18} className="ml-2" />
             <span>الكاشير</span>
+          </button>
+
+          <button
+            onClick={() => onCompleteSession(session)}
+            className="flex items-center justify-center bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-3 rounded-xl transition hover:scale-105"
+          >
+            <CheckCircle size={18} className="ml-2" />
+            <span>إتمام</span>
           </button>
 
           <button

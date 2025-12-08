@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PlusCircle, X } from "lucide-react";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
@@ -18,6 +18,8 @@ import {
   formatApiDate,
   toEnglishNumbers,
   toArabicNumbers,
+  getSessionStatusText,
+  shouldDisplaySession,
 } from "../utils/arabicNumbers";
 
 export default function Home() {
@@ -55,16 +57,31 @@ export default function Home() {
     originalEndTime: "",
     originalDiscount: 0,
     originalNotes: "",
-    originalEndTimeISO: null, // إضافة جديدة لحفظ الوقت الأصلي كـ ISO
+    originalEndTimeISO: null,
   });
 
   const [activeTab, setActiveTab] = useState("sessions");
   const [timerValues, setTimerValues] = useState({});
+  const printFrameRef = useRef(null);
 
   useEffect(() => {
     fetchSessions();
     fetchRooms();
     fetchClients();
+
+    const printFrame = document.createElement("iframe");
+    printFrame.style.display = "none";
+    printFrame.style.position = "absolute";
+    printFrame.style.top = "-9999px";
+    printFrame.style.left = "-9999px";
+    document.body.appendChild(printFrame);
+    printFrameRef.current = printFrame;
+
+    return () => {
+      if (printFrameRef.current) {
+        document.body.removeChild(printFrameRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -72,8 +89,10 @@ export default function Home() {
     const newTimerValues = {};
 
     sessions.forEach((session) => {
-      const timerValue = calculateTimerValue(session);
-      newTimerValues[session.id] = timerValue;
+      if (shouldDisplaySession(session)) {
+        const timerValue = calculateTimerValue(session);
+        newTimerValues[session.id] = timerValue;
+      }
     });
 
     setTimerValues(newTimerValues);
@@ -298,15 +317,18 @@ export default function Home() {
         endTime: session.endTime ? formatApiTimeToArabic(session.endTime) : "",
         duration: `${session.totalHours || 0} ساعة`,
         status: session.status,
+        statusText: getSessionStatusText(session.status),
         date: formatApiDate(session.startTime),
         arabicDate: formatApiDate(session.startTime),
         originalData: session,
       }));
 
-      setSessions(formattedSessions);
+      const filteredSessions = formattedSessions.filter(shouldDisplaySession);
+
+      setSessions(filteredSessions);
 
       const initialTimerValues = {};
-      formattedSessions.forEach((session) => {
+      filteredSessions.forEach((session) => {
         initialTimerValues[session.id] = calculateTimerValue(session);
       });
       setTimerValues(initialTimerValues);
@@ -370,7 +392,7 @@ export default function Home() {
         originalEndTime: endTime24Format,
         originalDiscount: sessionData.discount || 0,
         originalNotes: sessionData.notes || "",
-        originalEndTimeISO: sessionData.endTime || null, // حفظ الـ ISO الأصلي
+        originalEndTimeISO: sessionData.endTime || null,
       });
     } catch (error) {
       console.error("خطأ في فتح نموذج التعديل:", error);
@@ -434,30 +456,22 @@ export default function Home() {
         return;
       }
 
-      // تحديد الـ endTime المناسب لإرساله
-      let endTimeISO = originalEndTimeISO; // الافتراضي: الوقت الأصلي
+      let endTimeISO = originalEndTimeISO;
 
       if (endTime !== originalEndTime) {
-        // إذا كان هناك تغيير في وقت الانتهاء
         if (endTime) {
-          // تحويل الوقت الجديد إلى ISO
           const arabicTimeWithPeriod = convert24HourToArabicTime(endTime);
           endTimeISO = convertArabicTimeToISO(
             arabicTimeWithPeriod,
             editModal.session.date
           );
         } else {
-          // إذا حذفنا الوقت (أصبح فارغ)
           endTimeISO = null;
         }
       }
-      // إذا لم يتغير وقت الانتهاء، endTimeISO سيبقى القيمة الأصلية
 
-      // تحديد الخصم المناسب
       const discountToSend =
         discount !== originalDiscount ? discount : originalDiscount;
-
-      // تحديد الملاحظات المناسبة
       const notesToSend = notes !== originalNotes ? notes : originalNotes;
 
       const requestData = {
@@ -583,6 +597,352 @@ export default function Home() {
         color: "#e2e8f0",
       });
     }
+  };
+
+  const handleCompleteSession = async (session) => {
+    try {
+      Swal.fire({
+        title: "تأكيد إتمام الجلسة",
+        html: `
+          <div style="text-align: right;">
+            <p>هل أنت متأكد من إتمام الجلسة وطباعة الفاتورة؟</p>
+            <p><strong>العميل:</strong> ${session.customerName}</p>
+            <p><strong>الغرفة:</strong> ${session.roomNumber}</p>
+          </div>
+        `,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#10b981",
+        cancelButtonColor: "#6b7280",
+        confirmButtonText: "نعم، إتمام وطباعة",
+        cancelButtonText: "إلغاء",
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+        reverseButtons: true,
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            Swal.fire({
+              title: "جاري إتمام الجلسة...",
+              text: "يرجى الانتظار",
+              allowOutsideClick: false,
+              didOpen: () => {
+                Swal.showLoading();
+              },
+              background: "#0f172a",
+              color: "#e2e8f0",
+              backdrop: "rgba(0, 0, 0, 0.7)",
+            });
+
+            const sessionResponse = await axiosInstance.get(
+              `/api/Sessions/Get/${session.id}`
+            );
+            const sessionData = sessionResponse.data;
+
+            const receiptData = {
+              id: session.id,
+              customerName: session.customerName,
+              customerPhone: session.phone,
+              roomNumber: session.roomNumber,
+              sessionPrice: sessionData.sessionPrice || 0,
+              itemsPrice: sessionData.itemsPrice || 0,
+              discount: sessionData.discount || 0,
+              finalPrice: sessionData.finalPrice || 0,
+              items: sessionData.items || [],
+              date: new Date().toLocaleString("ar-EG", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              }),
+              orderNumber: `SESS-${session.id}`,
+              sessionCode: sessionData.sessionCode || "",
+              startTime: formatApiTimeToArabic(sessionData.startTime),
+              endTime: sessionData.endTime
+                ? formatApiTimeToArabic(sessionData.endTime)
+                : "",
+              totalHours: sessionData.totalHours || 0,
+            };
+
+            // ✅ هنا التعديل المطلوب: إضافة paymentForTimeNow كـ query parameter
+            await axiosInstance.put(
+              `/api/Sessions/Payment/${session.id}?paymentForTimeNow=true`
+            );
+
+            Swal.close();
+
+            await printSessionReceipt(receiptData);
+
+            await fetchSessions();
+
+            Swal.fire({
+              icon: "success",
+              title: "تم إتمام الجلسة بنجاح",
+              html: `
+                <div style="text-align: right;">
+                  <p>تم تسجيل الدفع بنجاح</p>
+                  <p>تمت طباعة الفاتورة للعميل ${session.customerName}</p>
+                  <p><strong>المبلغ الإجمالي:</strong> ${
+                    sessionData.finalPrice || 0
+                  } ج.م</p>
+                </div>
+              `,
+              timer: 3000,
+              showConfirmButton: false,
+              background: "#0f172a",
+              color: "#e2e8f0",
+              backdrop: "rgba(0, 0, 0, 0.7)",
+            });
+          } catch (error) {
+            console.error("Error completing session:", error);
+            Swal.close();
+
+            Swal.fire({
+              icon: "error",
+              title: "خطأ في إتمام الجلسة",
+              text: `حدث خطأ أثناء إتمام الجلسة: ${
+                error.response?.data?.message || error.message
+              }`,
+              timer: 3000,
+              showConfirmButton: true,
+              confirmButtonText: "حاول مرة أخرى",
+              background: "#0f172a",
+              color: "#e2e8f0",
+              backdrop: "rgba(0, 0, 0, 0.7)",
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error in handleCompleteSession:", error);
+    }
+  };
+
+  const printSessionReceipt = async (receiptData) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const receiptContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>فاتورة جلسة</title>
+<style>
+  @media print {
+    @page { margin: 0; size: 80mm auto; }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Arial', sans-serif;
+      font-size: 13px;
+      font-weight: bold;
+      width: 70mm;
+    }
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+  body {
+    margin: 0; padding: 10px; 
+    font-family: 'Arial', sans-serif;
+    font-size: 13px; 
+    font-weight: bold; 
+    width: 70mm; background: white; color: black;
+  }
+  .header { text-align: center; margin-bottom: 12px; border-bottom: 1px dashed #000; padding: 12px 0; }
+  .header h1 { margin: 0; font-size: 18px; font-weight: bold; }
+  .header h2 { margin: 3px 0; font-size: 16px; font-weight: bold; }
+  
+  .customer-info { 
+    width: 100%; 
+    margin: 12px 0; 
+    padding: 8px; 
+    background: #f5f5f5; 
+    border-radius: 4px; 
+    text-align: right; 
+    font-size: 12px; 
+    border: 1px dashed #ccc;
+  }
+  .customer-info div { margin: 6px 0; }
+  
+  .session-info { width: 100%; margin: 12px 0; text-align: right; font-size: 12px; }
+  .session-info div { margin: 6px 0; }
+
+  .items-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; table-layout: fixed; }
+  .items-table th, .items-table td {
+    border-bottom: 1px dashed #ccc;
+    padding: 6px 3px; 
+    font-size: 12px;
+    font-weight: bold;
+  }
+  .items-table th { border-bottom: 1px solid #000; }
+
+  .items-table th:nth-child(1), .items-table td:nth-child(1) { width: 5%; text-align: center; }
+  .items-table th:nth-child(2), .items-table td:nth-child(2) { width: 12%; text-align: center; }
+  .items-table th:nth-child(3), .items-table td:nth-child(3) { width: 28%; text-align: center; }
+  .items-table th:nth-child(4), .items-table td:nth-child(4) { width: 20%; text-align: center; }
+  .items-table th:nth-child(5), .items-table td:nth-child(5) { width: 20%; text-align: center; }
+
+  .total-section { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #000; text-align: right; font-size: 12px; }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 4px 0;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .total-row span:first-child {
+  }
+
+  .total-row span:last-child {
+    margin-left: 10px;
+  }
+  
+  .final-total { 
+    font-size: 16px; 
+    margin-top: 8px; 
+    padding-top: 8px;
+    border-top: 2px solid #000;
+    color: #000; 
+    font-weight: bold;
+  }
+  
+  .footer { margin-top: 12px; padding-top: 8px; border-top: 1px dashed #000; text-align: center; font-size: 10px; }
+  .thank-you { font-size: 14px; font-weight: bold; margin: 6px 0; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Workspace</h1>
+  <h2>فاتورة جلسة</h2>
+</div>
+
+<div class="customer-info">
+  <div><strong>اسم العميل:</strong> ${receiptData.customerName}</div>
+  <div><strong>رقم الهاتف:</strong> ${receiptData.customerPhone}</div>
+  <div><strong>رقم الغرفة:</strong> ${receiptData.roomNumber}</div>
+</div>
+
+<div class="session-info">
+  <div>رقم الفاتورة: ${receiptData.id}</div>
+  <div>التاريخ: ${receiptData.date}</div>
+  <div>وقت البدء: ${receiptData.startTime}</div>
+  ${
+    receiptData.endTime ? `<div>وقت الانتهاء: ${receiptData.endTime}</div>` : ""
+  }
+  <div>المدة: ${receiptData.totalHours} ساعة</div>
+</div>
+
+${
+  receiptData.items && receiptData.items.length > 0
+    ? `
+<table class="items-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>الكمية</th>
+      <th>الصنف</th>
+      <th>السعر</th>
+      <th>الإجمالي</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${receiptData.items
+      .map(
+        (item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${item.quantity}</td>
+          <td>${item.product.name || "منتج"}</td>
+          <td>${item.unitPrice || 0} ج.م</td>
+          <td>${item.totalPrice || 0} ج.م</td>
+        </tr>
+      `
+      )
+      .join("")}
+  </tbody>
+</table>
+`
+    : '<div style="text-align: center; margin: 12px 0; padding: 10px; background: #f5f5f5; border-radius: 4px;">لا توجد مشتريات إضافية</div>'
+}
+
+<div class="total-section">
+  ${
+    receiptData.sessionPrice
+      ? `
+    <div class="total-row"><span>سعر الجلسة:</span><span>${receiptData.sessionPrice} ج.م</span></div>
+  `
+      : ""
+  }
+  ${
+    receiptData.itemsPrice
+      ? `
+    <div class="total-row"><span>المشتريات الإضافية:</span><span>${receiptData.itemsPrice} ج.م</span></div>
+  `
+      : ""
+  }
+  ${
+    receiptData.discount
+      ? `
+    <div class="total-row"><span>الخصم:</span><span>-${receiptData.discount} ج.م</span></div>
+  `
+      : ""
+  }
+  <div class="total-row final-total"><span>المبلغ الإجمالي:</span><span>${
+    receiptData.finalPrice
+  } ج.م</span></div>
+</div>
+
+<div class="thank-you">شكراً لزيارتكم</div>
+
+<div class="footer">
+  <div>للاستفسار: 0123456789</div>
+  <div>تاريخ الطباعة: ${new Date().toLocaleString("ar-EG")}</div>
+</div>
+
+</body>
+</html>
+`;
+
+        if (printFrameRef.current) {
+          const printFrame = printFrameRef.current;
+          const printWindow = printFrame.contentWindow;
+
+          printWindow.document.open();
+          printWindow.document.write(receiptContent);
+          printWindow.document.close();
+
+          printWindow.onload = () => {
+            try {
+              setTimeout(() => {
+                printWindow.focus();
+
+                printWindow.onbeforeprint = null;
+                printWindow.onafterprint = null;
+
+                printWindow.print();
+
+                setTimeout(() => {
+                  resolve();
+                }, 1000);
+              }, 500);
+            } catch (err) {
+              reject(err);
+            }
+          };
+        } else {
+          reject(new Error("Print frame not available"));
+        }
+      } catch (error) {
+        reject(error);
+      }
+    });
   };
 
   const handleOpenCashier = (session) => {
@@ -983,6 +1343,7 @@ export default function Home() {
                     handleDeleteSession={handleDeleteSession}
                     onOpenCashier={handleOpenCashier}
                     onOpenEditModal={handleOpenEditModal}
+                    onCompleteSession={handleCompleteSession}
                   />
                 ))}
               </div>

@@ -95,12 +95,12 @@ const SessionsReportsPage = () => {
       let params = {};
       if (dateRange.startDate) {
         const startDate = new Date(dateRange.startDate);
-        startDate.setHours(0, 0, 0, 0);
+        startDate.setHours(2, 0, 0, 0); // تم التعديل ليكون 2 صباحاً
         params.startRange = startDate.toISOString();
       }
       if (dateRange.endDate) {
         const endDate = new Date(dateRange.endDate);
-        endDate.setHours(23, 59, 59, 999);
+        endDate.setHours(25, 59, 59, 999); // تم التعديل ليكون 25 ساعة (1 صباحاً من اليوم التالي)
         params.endRange = endDate.toISOString();
       }
 
@@ -114,6 +114,18 @@ const SessionsReportsPage = () => {
 
       calculateStats(sessionsData);
       setIsFilterApplied(false);
+
+      // إخفاء رسالة النجاح بعد التصفية مباشرة
+      Swal.fire({
+        title: "تم التصفية",
+        text: "تم تطبيق الفلاتر بنجاح",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+      });
     } catch (error) {
       console.error("خطأ في جلب الجلسات:", error);
       Swal.fire({
@@ -167,16 +179,6 @@ const SessionsReportsPage = () => {
 
   const handleManualFilter = () => {
     fetchSessions();
-    Swal.fire({
-      title: "تم التصفية",
-      text: "تم تطبيق الفلاتر بنجاح",
-      icon: "success",
-      timer: 1500,
-      showConfirmButton: false,
-      background: "#0f172a",
-      color: "#e2e8f0",
-      backdrop: "rgba(0, 0, 0, 0.7)",
-    });
   };
 
   const formatCurrency = (amount) => {
@@ -639,7 +641,7 @@ ${
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent pb-1">
-                  تقارير جلسات 
+                  تقارير جلسات
                 </h1>
                 <p className="text-gray-400 mt-2 md:mt-3">
                   عرض وتحليل إحصائيات جلسات والحجوزات

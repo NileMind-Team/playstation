@@ -407,7 +407,7 @@ export default function DrinksCashier() {
 </div>
 
 <div class="info">
-  <div>رقم الفاتورة: ${dataToPrint.orderNumber}</div>
+  <div>رقم الفاتورة: ${dataToPrint.id}</div>
   <div>التاريخ: ${dataToPrint.date}</div>
   <div>نوع الدفع: نقدي</div>
 </div>

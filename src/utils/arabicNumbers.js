@@ -1,3 +1,18 @@
+export const getSessionStatusText = (status) => {
+  const statusMap = {
+    Pending: "قيد الانتظار",
+    Active: "نشطة",
+    Finished: "منتهية",
+    Cancelled: "ملغية",
+    Payed: "مدفوعة", // ✅ الحالة الجديدة
+  };
+  return statusMap[status] || status;
+};
+
+export const shouldDisplaySession = (session) => {
+  return session.status !== "Payed";
+};
+
 export const toArabicNumbers = (num) => {
   const arabicNumbers = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
   return num.toString().replace(/\d/g, (digit) => arabicNumbers[digit]);
