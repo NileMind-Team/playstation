@@ -1,6 +1,15 @@
-import { Phone, DoorOpen, Clock, User, Info, ChevronDown } from "lucide-react";
-import { toArabicNumbers } from "../utils/arabicNumbers";
-import { useState } from "react";
+import {
+  Phone,
+  DoorOpen,
+  Clock,
+  User,
+  Info,
+  ChevronDown,
+  BookOpen,
+  Tag,
+} from "lucide-react";
+import { toArabicNumbers, toEnglishNumbers } from "../utils/arabicNumbers";
+import { useState, useEffect } from "react";
 
 export default function AddSessionForm({
   showAddForm,
@@ -8,9 +17,30 @@ export default function AddSessionForm({
   newSession,
   setNewSession,
   availableRooms,
+  clients,
+  clientsLoading,
   handleAddSession,
 }) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [roomsDropdownOpen, setRoomsDropdownOpen] = useState(false);
+  const [clientsDropdownOpen, setClientsDropdownOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
+
+  useEffect(() => {
+    if (newSession.selectedClientType === "existing" && newSession.clientId) {
+      const selectedClient = clients.find(
+        (client) => client.id === newSession.clientId
+      );
+      if (selectedClient) {
+        setNewSession({
+          ...newSession,
+          customerName: selectedClient.name,
+          phone: selectedClient.phoneNumber,
+          clientNotes: selectedClient.notes || "",
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newSession.clientId, newSession.selectedClientType, clients]);
 
   if (!showAddForm) return null;
 
@@ -39,7 +69,114 @@ export default function AddSessionForm({
 
   const handleRoomSelect = (roomName) => {
     setNewSession({ ...newSession, roomNumber: roomName });
-    setDropdownOpen(false);
+    setRoomsDropdownOpen(false);
+  };
+
+  const handleClientSelect = (client) => {
+    setNewSession({
+      ...newSession,
+      clientId: client.id,
+      customerName: client.name,
+      phone: client.phoneNumber,
+      clientNotes: client.notes || "",
+      selectedClientType: "existing",
+    });
+    setClientsDropdownOpen(false);
+    setClientSearch("");
+  };
+
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+      client.phoneNumber.includes(clientSearch)
+  );
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (
+      !newSession.customerName ||
+      !newSession.phone ||
+      !newSession.roomNumber ||
+      !newSession.startTime
+    ) {
+      alert("يرجى ملء الحقول المطلوبة (الاسم، الهاتف، الغرفة، وقت البدء)");
+      return;
+    }
+
+    const startTimeArabic = convertTimeToArabic(newSession.startTime);
+
+    const endTimeArabic = newSession.endTime
+      ? convertTimeToArabic(newSession.endTime)
+      : "";
+
+    const today = new Date();
+    const currentHour = today.getHours();
+
+    const englishStartTime = toEnglishNumbers(startTimeArabic);
+    let startHour = parseInt(englishStartTime.split(":")[0]);
+
+    if (startTimeArabic.includes("مساءً") && startHour < 12) {
+      startHour += 12;
+    } else if (startTimeArabic.includes("ظهراً") && startHour < 12) {
+      startHour += 12;
+    } else if (startTimeArabic.includes("صباحاً") && startHour === 12) {
+      startHour = 0;
+    }
+
+    let sessionDate;
+    if (startHour < currentHour) {
+      sessionDate = getTomorrowDate();
+    } else {
+      sessionDate = getCurrentDate();
+    }
+
+    const sessionData = {
+      ...newSession,
+      startTime: startTimeArabic,
+      endTime: endTimeArabic,
+      date: sessionDate,
+    };
+
+    handleAddSession(sessionData);
+  };
+
+  const convertTimeToArabic = (time) => {
+    if (!time) return "";
+
+    const [hours, minutes] = time.split(":").map(Number);
+    let period = "صباحاً";
+
+    if (hours >= 12) {
+      period = "مساءً";
+    }
+
+    const displayHours = hours % 12 || 12;
+    const arabicHours = toArabicNumbers(displayHours);
+    const arabicMinutes = toArabicNumbers(minutes.toString().padStart(2, "0"));
+
+    return `${arabicHours}:${arabicMinutes} ${period}`;
+  };
+
+  const getCurrentDate = () => {
+    const today = new Date();
+    const day = today.getDate();
+    const month = today.getMonth() + 1;
+    const year = today.getFullYear();
+    return `${toArabicNumbers(day)}-${toArabicNumbers(month)}-${toArabicNumbers(
+      year
+    )}`;
+  };
+
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const day = tomorrow.getDate();
+    const month = tomorrow.getMonth() + 1;
+    const year = tomorrow.getFullYear();
+    return `${toArabicNumbers(day)}-${toArabicNumbers(month)}-${toArabicNumbers(
+      year
+    )}`;
   };
 
   return (
@@ -61,41 +198,184 @@ export default function AddSessionForm({
         </div>
       </div>
 
-      <form onSubmit={handleAddSession} className="p-5">
+      <form onSubmit={handleSubmit} className="p-5">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="space-y-4">
             <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700 p-4 shadow-lg backdrop-blur-sm h-full">
-              <div className="flex items-center space-x-reverse space-x-2 mb-4">
-                <div className="p-1.5 bg-blue-500/20 rounded">
-                  <User className="text-blue-400" size={18} />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-reverse space-x-2">
+                  <div className="p-1.5 bg-blue-500/20 rounded">
+                    <User className="text-blue-400" size={18} />
+                  </div>
+                  <h4 className="font-bold text-blue-300">معلومات العميل</h4>
                 </div>
-                <h4 className="font-bold text-blue-300">معلومات العميل</h4>
+
+                <div className="flex items-center space-x-reverse space-x-2">
+                  <label className="flex items-center text-sm text-gray-300">
+                    <input
+                      type="radio"
+                      name="clientType"
+                      checked={newSession.selectedClientType === "new"}
+                      onChange={() => {
+                        setNewSession({
+                          ...newSession,
+                          selectedClientType: "new",
+                          clientId: null,
+                          customerName: "",
+                          phone: "",
+                          clientNotes: "",
+                        });
+                      }}
+                      className="ml-2"
+                    />
+                    عميل جديد
+                  </label>
+
+                  <label className="flex items-center text-sm text-gray-300">
+                    <input
+                      type="radio"
+                      name="clientType"
+                      checked={newSession.selectedClientType === "existing"}
+                      onChange={() => {
+                        setNewSession({
+                          ...newSession,
+                          selectedClientType: "existing",
+                        });
+                      }}
+                      className="ml-2"
+                    />
+                    عميل سابق
+                  </label>
+                </div>
               </div>
+
+              {newSession.selectedClientType === "existing" ? (
+                <div className="mb-4">
+                  <label className="flex items-center text-gray-300 mb-2 text-sm">
+                    <BookOpen size={16} className="ml-2 text-blue-400" />
+                    <span>اختيار العميل</span>
+                  </label>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setClientsDropdownOpen(!clientsDropdownOpen)
+                      }
+                      className={`w-full bg-gray-700/60 border ${
+                        newSession.clientId
+                          ? "border-blue-500/50"
+                          : "border-gray-600"
+                      } rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all duration-300 flex items-center justify-between group hover:bg-gray-700/80 relative`}
+                    >
+                      <div className="flex items-center">
+                        {newSession.clientId ? (
+                          <>
+                            <div className="w-2 h-2 bg-blue-400 rounded-full ml-2"></div>
+                            <span className="text-white">
+                              {newSession.customerName}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-gray-400">
+                            اختر عميل من القائمة
+                          </span>
+                        )}
+                      </div>
+                      <ChevronDown
+                        size={16}
+                        className={`text-gray-400 transition-transform duration-300 ${
+                          clientsDropdownOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                      <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-r-lg"></div>
+                    </button>
+
+                    {clientsDropdownOpen && (
+                      <div className="absolute z-20 w-full mt-1 bg-gray-800 border border-blue-500/30 rounded-lg shadow-xl shadow-blue-900/20 overflow-hidden backdrop-blur-sm">
+                        <div className="p-2 border-b border-gray-700">
+                          <input
+                            type="text"
+                            placeholder="ابحث عن عميل..."
+                            value={clientSearch}
+                            onChange={(e) => setClientSearch(e.target.value)}
+                            className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-1.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div className="max-h-40 overflow-y-auto">
+                          {clientsLoading ? (
+                            <div className="p-4 text-center">
+                              <p className="text-gray-400 text-sm">
+                                جاري تحميل العملاء...
+                              </p>
+                            </div>
+                          ) : filteredClients.length > 0 ? (
+                            filteredClients.map((client) => (
+                              <div
+                                key={client.id}
+                                onClick={() => handleClientSelect(client)}
+                                className="flex items-center justify-between px-3 py-2.5 hover:bg-blue-500/10 cursor-pointer transition-all duration-200 group/item"
+                              >
+                                <div className="flex items-center">
+                                  <div className="w-2 h-2 bg-blue-400 rounded-full ml-2"></div>
+                                  <div>
+                                    <p className="text-gray-300 group-hover/item:text-white font-medium">
+                                      {client.name}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                      {formatPhoneForDisplay(
+                                        client.phoneNumber
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                                <BookOpen
+                                  size={14}
+                                  className="text-blue-400 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                                />
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-4 text-center">
+                              <p className="text-gray-400 text-sm">
+                                لا توجد نتائج
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <label className="flex items-center text-gray-300 mb-2 text-sm">
+                      <User size={16} className="ml-2 text-blue-400" />
+                      <span>اسم العميل</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-purple-500 rounded-r group-hover:from-blue-400 group-hover:to-purple-400 transition-all"></div>
+                      <input
+                        type="text"
+                        value={newSession.customerName}
+                        onChange={(e) =>
+                          setNewSession({
+                            ...newSession,
+                            customerName: e.target.value,
+                          })
+                        }
+                        className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300"
+                        placeholder="أدخل اسم العميل"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="mb-4">
-                <label className="flex items-center text-gray-300 mb-2 text-sm">
-                  <User size={16} className="ml-2 text-blue-400" />
-                  <span>اسم العميل</span>
-                </label>
-                <div className="relative group">
-                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-purple-500 rounded-r group-hover:from-blue-400 group-hover:to-purple-400 transition-all"></div>
-                  <input
-                    type="text"
-                    value={newSession.customerName}
-                    onChange={(e) =>
-                      setNewSession({
-                        ...newSession,
-                        customerName: e.target.value,
-                      })
-                    }
-                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300"
-                    placeholder="أدخل اسم العميل"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
                 <label className="flex items-center text-gray-300 mb-2 text-sm">
                   <Phone size={16} className="ml-2 text-blue-400" />
                   <span>رقم الهاتف</span>
@@ -106,11 +386,16 @@ export default function AddSessionForm({
                     type="tel"
                     value={formatPhoneForDisplay(newSession.phone)}
                     onChange={handlePhoneChange}
-                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300 text-left placeholder:text-right"
+                    className={`w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300 text-left placeholder:text-right ${
+                      newSession.selectedClientType === "existing"
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
                     placeholder="أدخل رقم الهاتف"
                     required
                     dir="rtl"
                     inputMode="numeric"
+                    disabled={newSession.selectedClientType === "existing"}
                   />
                 </div>
               </div>
@@ -118,7 +403,7 @@ export default function AddSessionForm({
           </div>
 
           <div className="space-y-4">
-            <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700 p-4 shadow-lg backdrop-blur-sm h-full">
+            <div className="bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700 p-4 shadow-lg backdrop-blur-sm">
               <div className="flex items-center space-x-reverse space-x-2 mb-4">
                 <div className="p-1.5 bg-purple-500/20 rounded">
                   <DoorOpen className="text-purple-400" size={18} />
@@ -126,7 +411,7 @@ export default function AddSessionForm({
                 <h4 className="font-bold text-purple-300">تفاصيل الجلسة</h4>
               </div>
 
-              <div className="relative">
+              <div className="relative mb-4">
                 <label className="flex items-center text-gray-300 mb-2 text-sm">
                   <DoorOpen size={16} className="ml-2 text-purple-400" />
                   <span>اختيار الغرفة</span>
@@ -134,12 +419,12 @@ export default function AddSessionForm({
 
                 <button
                   type="button"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  onClick={() => setRoomsDropdownOpen(!roomsDropdownOpen)}
                   className={`w-full bg-gray-700/60 border ${
                     newSession.roomNumber
                       ? "border-purple-500/50"
                       : "border-gray-600"
-                  } rounded-lg py-2.5 px-3 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all duration-300 flex items-center justify-between group hover:bg-gray-700/80 relative`}
+                  } rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 transition-all duration-300 flex items-center justify-between group hover:bg-gray-700/80 relative`}
                 >
                   <div className="flex items-center">
                     {newSession.roomNumber ? (
@@ -158,13 +443,13 @@ export default function AddSessionForm({
                   <ChevronDown
                     size={16}
                     className={`text-gray-400 transition-transform duration-300 ${
-                      dropdownOpen ? "rotate-180" : ""
+                      roomsDropdownOpen ? "rotate-180" : ""
                     }`}
                   />
                   <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500 rounded-r-lg"></div>
                 </button>
 
-                {dropdownOpen && (
+                {roomsDropdownOpen && (
                   <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-purple-500/30 rounded-lg shadow-xl shadow-purple-900/20 overflow-hidden backdrop-blur-sm">
                     <div className="max-h-40 overflow-y-auto">
                       {availableRooms
@@ -177,9 +462,15 @@ export default function AddSessionForm({
                           >
                             <div className="flex items-center">
                               <div className="w-2 h-2 bg-green-400 rounded-full ml-2 animate-pulse"></div>
-                              <span className="text-gray-300 group-hover/item:text-white">
-                                {room.name}
-                              </span>
+                              <div>
+                                <span className="text-gray-300 group-hover/item:text-white">
+                                  {room.name}
+                                </span>
+                                <span className="text-xs text-gray-400 block">
+                                  الساعة: {toArabicNumbers(room.hourCost || 0)}{" "}
+                                  جنيه
+                                </span>
+                              </div>
                             </div>
                             <div className="flex items-center space-x-reverse space-x-2">
                               <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded">
@@ -224,6 +515,35 @@ export default function AddSessionForm({
                   </div>
                 </div>
               )}
+
+              <div className="mt-4">
+                <label className="flex items-center text-gray-300 mb-2 text-sm">
+                  <Tag size={16} className="ml-2 text-yellow-400" />
+                  <span>الخصم (اختياري)</span>
+                </label>
+                <div className="relative group">
+                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-500 to-orange-500 rounded-r group-hover:from-yellow-400 group-hover:to-orange-400 transition-all"></div>
+                  <input
+                    type="number"
+                    value={newSession.discount || ""}
+                    onChange={(e) =>
+                      setNewSession({
+                        ...newSession,
+                        discount: e.target.value
+                          ? parseFloat(e.target.value)
+                          : 0,
+                      })
+                    }
+                    min="0"
+                    step="0.01"
+                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-yellow-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300"
+                    placeholder="أدخل قيمة الخصم"
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                    ج.م
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -260,12 +580,17 @@ export default function AddSessionForm({
               </div>
 
               <div>
-                <label className="flex items-center text-gray-300 mb-2 text-sm">
-                  <Clock size={16} className="ml-2 text-red-400" />
-                  <span>وقت الانتهاء</span>
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center text-gray-300 text-sm">
+                    <Clock size={16} className="ml-2 text-blue-400" />
+                    <span>وقت الانتهاء</span>
+                  </label>
+                  <span className="text-xs text-gray-400 bg-gray-700/60 px-2 py-1 rounded">
+                    اختياري
+                  </span>
+                </div>
                 <div className="relative group">
-                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-red-500 to-pink-500 rounded-r group-hover:from-red-400 group-hover:to-pink-400 transition-all"></div>
+                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-r group-hover:from-blue-400 group-hover:to-cyan-400 transition-all"></div>
                   <input
                     type="time"
                     id="endTimeField"
@@ -276,8 +601,8 @@ export default function AddSessionForm({
                         endTime: e.target.value,
                       })
                     }
-                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300"
-                    required
+                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300"
+                    placeholder="اختياري"
                   />
                 </div>
               </div>
@@ -298,12 +623,14 @@ export default function AddSessionForm({
             disabled={
               !newSession.roomNumber ||
               !newSession.startTime ||
-              !newSession.endTime
+              !newSession.customerName ||
+              !newSession.phone
             }
             className={`px-6 py-2.5 rounded-lg font-bold transition-all duration-300 flex items-center space-x-reverse space-x-2 group text-sm ${
               !newSession.roomNumber ||
               !newSession.startTime ||
-              !newSession.endTime
+              !newSession.customerName ||
+              !newSession.phone
                 ? "bg-gray-700 cursor-not-allowed opacity-50"
                 : "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/30"
             }`}
@@ -469,22 +796,22 @@ export default function AddSessionForm({
         }
 
         #endTimeField {
-          color: #ef4444 !important;
+          color: #0ea5e9 !important;
         }
 
         #endTimeField::-webkit-datetime-edit-fields-wrapper {
-          color: #ef4444 !important;
+          color: #0ea5e9 !important;
         }
 
         #endTimeField::-webkit-datetime-edit-hour-field,
         #endTimeField::-webkit-datetime-edit-minute-field,
         #endTimeField::-webkit-datetime-edit-ampm-field {
-          color: #ef4444 !important;
+          color: #0ea5e9 !important;
           background: transparent;
         }
 
         #endTimeField::-webkit-calendar-picker-indicator {
-          filter: invert(0.7) sepia(1) saturate(10) hue-rotate(330deg)
+          filter: invert(0.7) sepia(1) saturate(10) hue-rotate(200deg)
             brightness(1.3) !important;
         }
 
@@ -493,7 +820,7 @@ export default function AddSessionForm({
         }
 
         #endTimeField::-webkit-datetime-edit-text {
-          color: rgba(239, 68, 68, 0.7) !important;
+          color: rgba(14, 165, 233, 0.7) !important;
         }
 
         input[type="time"] {

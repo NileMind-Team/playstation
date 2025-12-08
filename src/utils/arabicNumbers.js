@@ -81,17 +81,29 @@ export const arabicTimeSlots = [
   "١١:٠٠ مساءً",
 ];
 
+export const convertToEgyptTime = (utcDateString) => {
+  if (!utcDateString) return new Date();
+
+  const utcDate = new Date(utcDateString);
+
+  const egyptOffset = 2 * 60 * 60 * 1000;
+
+  return new Date(utcDate.getTime() + egyptOffset);
+};
+
 export const formatApiTimeToArabic = (apiTimeString) => {
   if (!apiTimeString) return "٠٠:٠٠";
 
-  const date = new Date(apiTimeString);
-  let hours = date.getHours();
-  let minutes = date.getMinutes();
+  const egyptDate = convertToEgyptTime(apiTimeString);
+
+  let hours = egyptDate.getHours();
+  let minutes = egyptDate.getMinutes();
 
   let period = "صباحاً";
   if (hours >= 12) {
     period = "مساءً";
   }
+
   hours = hours % 12 || 12;
 
   const arabicHours = toArabicNumbers(hours);
@@ -103,19 +115,46 @@ export const formatApiTimeToArabic = (apiTimeString) => {
 export const formatApiDate = (apiDateString) => {
   if (!apiDateString) return getCurrentDate();
 
-  const date = new Date(apiDateString);
+  const egyptDate = convertToEgyptTime(apiDateString);
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  if (date.toDateString() === today.toDateString()) {
+  const normalizeDate = (date) => {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  };
+
+  const normalizedEgyptDate = normalizeDate(egyptDate);
+  const normalizedToday = normalizeDate(today);
+  const normalizedTomorrow = normalizeDate(tomorrow);
+
+  if (normalizedEgyptDate.getTime() === normalizedToday.getTime()) {
     return getCurrentDate();
-  } else if (date.toDateString() === tomorrow.toDateString()) {
+  } else if (normalizedEgyptDate.getTime() === normalizedTomorrow.getTime()) {
     return getTomorrowDate();
   } else {
-    const day = toArabicNumbers(date.getDate());
-    const month = toArabicNumbers(date.getMonth() + 1);
-    const year = toArabicNumbers(date.getFullYear());
+    const day = toArabicNumbers(egyptDate.getDate());
+    const month = toArabicNumbers(egyptDate.getMonth() + 1);
+    const year = toArabicNumbers(egyptDate.getFullYear());
     return `${day}/${month}/${year}`;
   }
+};
+
+export const formatDuration = (durationStr) => {
+  if (!durationStr) return "٠ ساعة";
+
+  const match = durationStr.match(/([\d.]+)\s*ساعة/);
+  if (!match) return durationStr;
+
+  const number = parseFloat(match[1]);
+  if (isNaN(number)) return durationStr;
+
+  if (number % 1 !== 0) {
+    const decimalPart = number.toString().split(".")[1] || "";
+    const roundedDecimal = decimalPart.slice(0, 3);
+    const formattedNumber = `${Math.floor(number)}.${roundedDecimal}`;
+    return `${toArabicNumbers(formattedNumber)} ساعة`;
+  }
+
+  return `${toArabicNumbers(number)} ساعة`;
 };

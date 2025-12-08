@@ -10,6 +10,8 @@ import {
   Users as ClientsIcon,
   Coffee,
   Sparkles,
+  FileText,
+  Calendar, // إضافة أيقونة الجلسات
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -144,6 +146,17 @@ export default function Header({ activeTab, onTabChange }) {
   const goToClientsPage = () => {
     closeDropdown();
     navigate("/clients");
+  };
+
+  const goToDrinkReportsPage = () => {
+    closeDropdown();
+    navigate("/drink-reports");
+  };
+
+  // إضافة الدالة الجديدة
+  const goToSessionsReportsPage = () => {
+    closeDropdown();
+    navigate("/sessions-reports");
   };
 
   return (
@@ -380,6 +393,26 @@ export default function Header({ activeTab, onTabChange }) {
 
               {isAdmin && !loading && (
                 <>
+                  <button
+                    onClick={goToSessionsReportsPage} // إضافة الزر الجديد
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+                  >
+                    <div className="p-1.5 bg-blue-500/10 rounded-md">
+                      <Calendar size={16} className="text-blue-400" />
+                    </div>
+                    <span>تقارير الجلسات</span>
+                  </button>
+
+                  <button
+                    onClick={goToDrinkReportsPage}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+                  >
+                    <div className="p-1.5 bg-teal-500/10 rounded-md">
+                      <FileText size={16} className="text-teal-400" />
+                    </div>
+                    <span>تقارير المشروبات</span>
+                  </button>
+
                   <button
                     onClick={goToUsersPage}
                     className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"

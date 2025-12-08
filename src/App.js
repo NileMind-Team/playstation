@@ -8,6 +8,8 @@ import ItemTypesPage from "./pages/ItemTypesPage";
 import ItemsPage from "./pages/ItemsPage";
 import RoomsPage from "./pages/RoomsPage";
 import ClientsPage from "./pages/ClientsPage";
+import DrinkReportsPage from "./pages/DrinkReportsPage";
+import SessionsReportsPage from "./pages/SessionsReportsPage";
 
 function App() {
   const location = useLocation();
@@ -48,6 +50,16 @@ function App() {
           <Route
             path="/clients"
             element={isLogged ? <ClientsPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/drink-reports"
+            element={isLogged ? <DrinkReportsPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/sessions-reports"
+            element={
+              isLogged ? <SessionsReportsPage /> : <Navigate to="/login" />
+            }
           />
           <Route
             path="*"

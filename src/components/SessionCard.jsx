@@ -7,6 +7,7 @@ import {
   Phone,
   Trash2,
   ShoppingCart,
+  Edit,
 } from "lucide-react";
 
 export default function SessionCard({
@@ -14,6 +15,7 @@ export default function SessionCard({
   timerValue,
   handleDeleteSession,
   onOpenCashier,
+  onOpenEditModal,
 }) {
   const [localTimer, setLocalTimer] = useState({
     hours: 0,
@@ -41,7 +43,28 @@ export default function SessionCard({
     return num.toString().replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[digit]);
   };
 
-  // دالة جديدة: تحويل حالة الجلسة من الإنجليزية إلى العربية بناءً على الـ status من API
+  // دالة جديدة: تنسيق المدة العشرية
+  const formatDuration = (durationStr) => {
+    if (!durationStr) return "٠ ساعة";
+
+    // تحويل "X ساعة" إلى رقم
+    const match = durationStr.match(/([\d.]+)\s*ساعة/);
+    if (!match) return durationStr;
+
+    const number = parseFloat(match[1]);
+    if (isNaN(number)) return durationStr;
+
+    // إذا كان رقم عشري، أخذ أول 3 أرقام بعد الفاصلة
+    if (number % 1 !== 0) {
+      const decimalPart = number.toString().split(".")[1] || "";
+      const roundedDecimal = decimalPart.slice(0, 3);
+      const formattedNumber = `${Math.floor(number)}.${roundedDecimal}`;
+      return `${toArabicNumbers(formattedNumber)} ساعة`;
+    }
+
+    return `${toArabicNumbers(number)} ساعة`;
+  };
+
   const getSessionStatusInfo = (status) => {
     const statusMap = {
       Pending: {
@@ -70,7 +93,6 @@ export default function SessionCard({
       },
     };
 
-    // إذا كانت الحالة غير معروفة، نستخدم "قيد الانتظار" كحالة افتراضية
     return statusMap[status] || statusMap["Pending"];
   };
 
@@ -184,7 +206,6 @@ export default function SessionCard({
     );
   };
 
-  // الحصول على معلومات حالة الجلسة
   const statusInfo = getSessionStatusInfo(session.status);
 
   return (
@@ -204,7 +225,6 @@ export default function SessionCard({
             </p>
           </div>
 
-          {/* تحديث: عرض حالة الجلسة بناءً على الـ status من API */}
           <div
             className={`flex items-center gap-2 ${statusInfo.bgColor} backdrop-blur-sm px-3 py-1.5 rounded-full`}
           >
@@ -262,7 +282,9 @@ export default function SessionCard({
               <Clock size={18} className="ml-2 text-green-400" />
               <span className="text-gray-400">المدة</span>
             </div>
-            <p className="text-lg font-bold">{session.duration}</p>
+            <p className="text-lg font-bold">
+              {formatDuration(session.duration)}
+            </p>
           </div>
 
           <div className="bg-gray-800/30 p-4 rounded-xl">
@@ -274,13 +296,21 @@ export default function SessionCard({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <button
             onClick={() => onOpenCashier(session)}
             className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-xl transition hover:scale-105"
           >
             <ShoppingCart size={18} className="ml-2" />
-            <span>فتح الكاشير</span>
+            <span>الكاشير</span>
+          </button>
+
+          <button
+            onClick={() => onOpenEditModal(session)}
+            className="flex items-center justify-center bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 py-3 rounded-xl transition hover:scale-105"
+          >
+            <Edit size={18} className="ml-2" />
+            <span>تعديل</span>
           </button>
 
           <button
@@ -288,7 +318,7 @@ export default function SessionCard({
             className="flex items-center justify-center bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 py-3 rounded-xl transition hover:scale-105"
           >
             <Trash2 size={18} className="ml-2" />
-            <span>حذف الجلسة</span>
+            <span>حذف</span>
           </button>
         </div>
       </div>
