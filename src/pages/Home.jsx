@@ -12,7 +12,6 @@ import DrinksCashier from "../components/DrinksCashier";
 import axiosInstance from "../api/axiosInstance";
 import {
   getCurrentDate,
-  getTomorrowDate,
   arabicTimeToMinutes,
   formatApiTimeToArabic,
   formatApiDate,
@@ -1191,17 +1190,12 @@ ${
   };
 
   const activeSessionsCount = sessions.filter(
-    (session) => session.status === "Active" || session.status === "Pending"
+    (session) => session.status === "Active"
   ).length;
 
   const todaySessions = sessions.filter(
     (session) =>
       toEnglishNumbers(session.date) === toEnglishNumbers(getCurrentDate())
-  ).length;
-
-  const tomorrowSessions = sessions.filter(
-    (session) =>
-      toEnglishNumbers(session.date) === toEnglishNumbers(getTomorrowDate())
   ).length;
 
   return (
@@ -1337,11 +1331,9 @@ ${
 
       {activeTab === "sessions" ? (
         <>
-          <div className="flex flex-col lg:flex-row gap-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-28 mb-8">
             <SearchBar />
-            <StatsCards
-              stats={{ activeSessionsCount, todaySessions, tomorrowSessions }}
-            />
+            <StatsCards stats={{ activeSessionsCount, todaySessions }} />
           </div>
 
           <div className="flex justify-between items-center mb-6">

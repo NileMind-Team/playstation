@@ -77,30 +77,35 @@ export default function SessionCard({
         color: "text-yellow-400",
         bgColor: "bg-yellow-500/20",
         dotColor: "bg-yellow-400",
+        borderColor: "from-yellow-500 via-yellow-400 to-yellow-600",
       },
       Active: {
         text: "نشطة",
         color: "text-green-400",
         bgColor: "bg-green-500/20",
         dotColor: "bg-green-400",
+        borderColor: "from-green-500 via-emerald-400 to-green-600",
       },
       Finished: {
         text: "منتهية",
         color: "text-red-400",
         bgColor: "bg-red-500/20",
         dotColor: "bg-red-400",
+        borderColor: "from-red-500 via-red-400 to-red-600",
       },
       Cancelled: {
         text: "ملغية",
         color: "text-gray-400",
         bgColor: "bg-gray-500/20",
         dotColor: "bg-gray-400",
+        borderColor: "from-gray-500 via-gray-400 to-gray-600",
       },
       Payed: {
         text: "مدفوعة",
         color: "text-blue-400",
         bgColor: "bg-blue-500/20",
         dotColor: "bg-blue-400",
+        borderColor: "from-blue-500 via-blue-400 to-blue-600",
       },
     };
 
@@ -220,51 +225,52 @@ export default function SessionCard({
 
   return (
     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] group relative">
-      <div className="absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-b from-green-500 via-emerald-400 to-green-600"></div>
+      <div
+        className={`absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-b ${statusInfo.borderColor}`}
+      ></div>
 
-      <div className="p-6 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
-        <div className="flex justify-between items-start mb-4">
-          <div className="min-w-0">
-            {" "}
-            <h3 className="text-xl font-bold flex items-center">
+      <div className="p-5 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
+        <div className="flex justify-between items-start mb-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-bold flex items-center">
               <UserCircle
-                size={24}
+                size={20}
                 className="ml-2 text-blue-400 flex-shrink-0"
               />
               <span className="truncate" title={session.customerName}>
                 {truncateName(session.customerName)}
               </span>
             </h3>
-            <p className="text-gray-400 text-sm mt-1 flex items-center">
-              <Phone size={16} className="ml-1 flex-shrink-0" />
+            <p className="text-gray-400 text-xs mt-1 flex items-center">
+              <Phone size={14} className="ml-1 flex-shrink-0" />
               <span>{session.phone}</span>
             </p>
           </div>
 
           <div
-            className={`flex items-center gap-2 ${statusInfo.bgColor} backdrop-blur-sm px-3 py-1.5 rounded-full flex-shrink-0`}
+            className={`flex items-center gap-2 ${statusInfo.bgColor} backdrop-blur-sm px-3 py-1 rounded-full flex-shrink-0`}
           >
             <span
-              className={`inline-block w-2.5 h-2.5 ${statusInfo.dotColor} rounded-full animate-pulse`}
+              className={`inline-block w-2 h-2 ${statusInfo.dotColor} rounded-full animate-pulse`}
             ></span>
-            <span className={`${statusInfo.color} text-sm font-medium`}>
+            <span className={`${statusInfo.color} text-xs font-medium`}>
               {session.statusText || statusInfo.text}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between bg-gray-800/50 p-3 rounded-xl">
+        <div className="flex items-center justify-between bg-gray-800/50 p-2 rounded-lg mt-2">
           <div className="flex items-center">
-            <DoorOpen size={20} className="ml-2 text-purple-400" />
-            <span className="font-medium">رقم الغرفة</span>
+            <DoorOpen size={16} className="ml-2 text-purple-400" />
+            <span className="font-medium text-sm">رقم الغرفة</span>
           </div>
-          <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             {session.roomNumber}
           </span>
         </div>
       </div>
 
-      <div className="relative h-12 border-t border-b border-gray-700/50 bg-gradient-to-r from-gray-800/30 via-gray-900/30 to-gray-800/30">
+      <div className="relative h-10 border-t border-b border-gray-700/50 bg-gradient-to-r from-gray-800/30 via-gray-900/30 to-gray-800/30">
         <div className="absolute top-1/2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent transform -translate-y-1/2"></div>
 
         <div className="absolute top-1/2 left-1/4 w-6 h-px bg-gradient-to-r from-transparent to-blue-500/30 transform -translate-y-1/2"></div>
@@ -273,77 +279,75 @@ export default function SessionCard({
         {displayTimer()}
       </div>
 
-      <div className="p-6">
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-gray-800/30 p-4 rounded-xl">
-            <div className="flex items-center mb-2">
-              <Clock size={18} className="ml-2 text-blue-400" />
-              <span className="text-gray-400">وقت البدء</span>
+      <div className="p-5">
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-gray-800/30 p-3 rounded-lg">
+            <div className="flex items-center mb-1">
+              <Clock size={16} className="ml-2 text-blue-400" />
+              <span className="text-gray-400 text-sm">وقت البدء</span>
             </div>
-            <p className="text-lg font-bold">{session.startTime}</p>
+            <p className="font-bold">{session.startTime}</p>
           </div>
 
-          <div className="bg-gray-800/30 p-4 rounded-xl">
-            <div className="flex items-center mb-2">
-              <Clock size={18} className="ml-2 text-red-400" />
-              <span className="text-gray-400">وقت الانتهاء</span>
+          <div className="bg-gray-800/30 p-3 rounded-lg">
+            <div className="flex items-center mb-1">
+              <Clock size={16} className="ml-2 text-red-400" />
+              <span className="text-gray-400 text-sm">وقت الانتهاء</span>
             </div>
-            <p className="text-lg font-bold">{session.endTime || "غير محدد"}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-gray-800/30 p-4 rounded-xl">
-            <div className="flex items-center mb-2">
-              <Clock size={18} className="ml-2 text-green-400" />
-              <span className="text-gray-400">المدة</span>
-            </div>
-            <p className="text-lg font-bold">
-              {formatDuration(session.duration)}
-            </p>
-          </div>
-
-          <div className="bg-gray-800/30 p-4 rounded-xl">
-            <div className="flex items-center mb-2">
-              <Calendar size={18} className="ml-2 text-yellow-400" />
-              <span className="text-gray-400">التاريخ</span>
-            </div>
-            <p className="text-lg font-bold">{session.date}</p>
+            <p className="font-bold">{session.endTime || "غير محدد"}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-gray-800/30 p-3 rounded-lg">
+            <div className="flex items-center mb-1">
+              <Clock size={16} className="ml-2 text-green-400" />
+              <span className="text-gray-400 text-sm">المدة</span>
+            </div>
+            <p className="font-bold">{formatDuration(session.duration)}</p>
+          </div>
+
+          <div className="bg-gray-800/30 p-3 rounded-lg">
+            <div className="flex items-center mb-1">
+              <Calendar size={16} className="ml-2 text-yellow-400" />
+              <span className="text-gray-400 text-sm">التاريخ</span>
+            </div>
+            <p className="font-bold">{session.date}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 mb-2">
           <button
             onClick={() => onOpenCashier(session)}
-            className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-xl transition hover:scale-105"
+            className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-2 rounded-lg transition hover:scale-105 text-sm"
           >
-            <ShoppingCart size={18} className="ml-2" />
+            <ShoppingCart size={16} className="ml-1" />
             <span>الكاشير</span>
           </button>
 
           <button
             onClick={() => onCompleteSession(session)}
-            className="flex items-center justify-center bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-3 rounded-xl transition hover:scale-105"
+            className="flex items-center justify-center bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-2 rounded-lg transition hover:scale-105 text-sm"
           >
-            <CheckCircle size={18} className="ml-2" />
+            <CheckCircle size={16} className="ml-1" />
             <span>إتمام الجلسة</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => onOpenEditModal(session)}
-            className="flex items-center justify-center bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 py-3 rounded-xl transition hover:scale-105"
+            className="flex items-center justify-center bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 py-2 rounded-lg transition hover:scale-105 text-sm"
           >
-            <Edit size={18} className="ml-2" />
+            <Edit size={16} className="ml-1" />
             <span>تعديل الجلسة</span>
           </button>
 
           <button
             onClick={() => handleDeleteSession(session.id, session.roomNumber)}
-            className="flex items-center justify-center bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 py-3 rounded-xl transition hover:scale-105"
+            className="flex items-center justify-center bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 py-2 rounded-lg transition hover:scale-105 text-sm"
           >
-            <Trash2 size={18} className="ml-2" />
+            <Trash2 size={16} className="ml-1" />
             <span>حذف الجلسة</span>
           </button>
         </div>

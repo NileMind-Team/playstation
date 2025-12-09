@@ -3,7 +3,7 @@ import { DoorOpen } from "lucide-react";
 export default function RoomsStatus({ availableRooms }) {
   return (
     <div className="mt-12 bg-gradient-to-r from-gray-800 to-gray-900 p-6 rounded-2xl border border-gray-700">
-      <h3 className="text-2xl font-bold mb-6">حالة الغرف المتاحة</h3>
+      <h3 className="text-2xl font-bold mb-6">حالة الغرف الان</h3>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {availableRooms.map((room) => (
           <div
