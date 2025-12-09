@@ -2,7 +2,7 @@ import { Search, ArrowLeft } from "lucide-react";
 
 export default function SearchBar() {
   return (
-    <div className="flex-1">
+    <div className="w-full lg:max-w-[700px]">
       <div className="relative group">
         <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-2xl blur-sm opacity-30 group-hover:opacity-50 transition duration-300"></div>
         <div className="relative">

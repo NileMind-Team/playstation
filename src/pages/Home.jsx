@@ -3,7 +3,7 @@ import { PlusCircle, X } from "lucide-react";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
-import StatsCards from "../components/StatsCards";
+// import StatsCards from "../components/StatsCards";
 import AddSessionForm from "../components/AddSessionForm";
 import SessionCard from "../components/SessionCard";
 import RoomsStatus from "../components/RoomsStatus";
@@ -11,7 +11,7 @@ import CashierModal from "../components/CashierModal";
 import DrinksCashier from "../components/DrinksCashier";
 import axiosInstance from "../api/axiosInstance";
 import {
-  getCurrentDate,
+  // getCurrentDate,
   arabicTimeToMinutes,
   formatApiTimeToArabic,
   formatApiDate,
@@ -1260,14 +1260,14 @@ ${
     )} ${period}`;
   };
 
-  const activeSessionsCount = sessions.filter(
-    (session) => session.status === "Active"
-  ).length;
+  // const activeSessionsCount = sessions.filter(
+  //   (session) => session.status === "Active"
+  // ).length;
 
-  const todaySessions = sessions.filter(
-    (session) =>
-      toEnglishNumbers(session.date) === toEnglishNumbers(getCurrentDate())
-  ).length;
+  // const todaySessions = sessions.filter(
+  //   (session) =>
+  //     toEnglishNumbers(session.date) === toEnglishNumbers(getCurrentDate())
+  // ).length;
 
   return (
     <div
@@ -1404,7 +1404,7 @@ ${
         <>
           <div className="flex flex-col lg:flex-row gap-28 mb-8">
             <SearchBar />
-            <StatsCards stats={{ activeSessionsCount, todaySessions }} />
+            {/* <StatsCards stats={{ activeSessionsCount, todaySessions }} /> */}
           </div>
 
           <div className="flex justify-between items-center mb-6">
