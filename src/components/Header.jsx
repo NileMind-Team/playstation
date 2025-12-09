@@ -11,7 +11,8 @@ import {
   Coffee,
   Sparkles,
   FileText,
-  Calendar, // إضافة أيقونة الجلسات
+  Calendar,
+  History,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -156,6 +157,11 @@ export default function Header({ activeTab, onTabChange }) {
   const goToSessionsReportsPage = () => {
     closeDropdown();
     navigate("/sessions-reports");
+  };
+
+  const goToClientSessionsPage = () => {
+    closeDropdown();
+    navigate("/client-sessions");
   };
 
   return (
@@ -393,7 +399,7 @@ export default function Header({ activeTab, onTabChange }) {
               {isAdmin && !loading && (
                 <>
                   <button
-                    onClick={goToSessionsReportsPage} // إضافة الزر الجديد
+                    onClick={goToSessionsReportsPage}
                     className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
                   >
                     <div className="p-1.5 bg-blue-500/10 rounded-md">
@@ -410,6 +416,16 @@ export default function Header({ activeTab, onTabChange }) {
                       <FileText size={16} className="text-teal-400" />
                     </div>
                     <span>تقارير المشروبات</span>
+                  </button>
+
+                  <button
+                    onClick={goToClientSessionsPage}
+                    className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-gray-800/50 rounded-lg transition-colors w-full text-left"
+                  >
+                    <div className="p-1.5 bg-indigo-500/10 rounded-md">
+                      <History size={16} className="text-indigo-400" />
+                    </div>
+                    <span>جلسات العملاء</span>
                   </button>
 
                   <button

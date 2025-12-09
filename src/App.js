@@ -10,6 +10,7 @@ import RoomsPage from "./pages/RoomsPage";
 import ClientsPage from "./pages/ClientsPage";
 import DrinkReportsPage from "./pages/DrinkReportsPage";
 import SessionsReportsPage from "./pages/SessionsReportsPage";
+import ClientSessionsPage from "./pages/ClientSessionsPage";
 
 function App() {
   const location = useLocation();
@@ -59,6 +60,12 @@ function App() {
             path="/sessions-reports"
             element={
               isLogged ? <SessionsReportsPage /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/client-sessions"
+            element={
+              isLogged ? <ClientSessionsPage /> : <Navigate to="/login" />
             }
           />
           <Route

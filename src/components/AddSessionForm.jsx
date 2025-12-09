@@ -7,8 +7,9 @@ import {
   ChevronDown,
   BookOpen,
   Tag,
+  Calendar,
 } from "lucide-react";
-import { toArabicNumbers, toEnglishNumbers } from "../utils/arabicNumbers";
+import { toArabicNumbers } from "../utils/arabicNumbers";
 import { useState, useEffect } from "react";
 
 export default function AddSessionForm({
@@ -94,48 +95,44 @@ export default function AddSessionForm({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (
-      !newSession.customerName ||
-      !newSession.phone ||
-      !newSession.roomNumber ||
-      !newSession.startTime
-    ) {
-      alert("يرجى ملء الحقول المطلوبة (الاسم، الهاتف، الغرفة، وقت البدء)");
-      return;
-    }
-
     const startTimeArabic = convertTimeToArabic(newSession.startTime);
-
     const endTimeArabic = newSession.endTime
       ? convertTimeToArabic(newSession.endTime)
       : "";
 
-    const today = new Date();
-    const currentHour = today.getHours();
+    const formatDateToArabicFormat = (dateString) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      return `${toArabicNumbers(day)}-${toArabicNumbers(
+        month
+      )}-${toArabicNumbers(year)}`;
+    };
 
-    const englishStartTime = toEnglishNumbers(startTimeArabic);
-    let startHour = parseInt(englishStartTime.split(":")[0]);
+    const startDateArabic = formatDateToArabicFormat(newSession.startDate);
+    const endDateArabic = newSession.endDate
+      ? formatDateToArabicFormat(newSession.endDate)
+      : "";
 
-    if (startTimeArabic.includes("مساءً") && startHour < 12) {
-      startHour += 12;
-    } else if (startTimeArabic.includes("ظهراً") && startHour < 12) {
-      startHour += 12;
-    } else if (startTimeArabic.includes("صباحاً") && startHour === 12) {
-      startHour = 0;
-    }
-
-    let sessionDate;
-    if (startHour < currentHour) {
-      sessionDate = getTomorrowDate();
-    } else {
-      sessionDate = getCurrentDate();
-    }
+    console.log("بيانات الجلسة قبل الإرسال:", {
+      startDate: newSession.startDate,
+      startDateArabic,
+      startTime: newSession.startTime,
+      startTimeArabic,
+      endDate: newSession.endDate,
+      endDateArabic,
+      endTime: newSession.endTime,
+      endTimeArabic,
+    });
 
     const sessionData = {
       ...newSession,
       startTime: startTimeArabic,
       endTime: endTimeArabic,
-      date: sessionDate,
+      startDate: startDateArabic,
+      endDate: endDateArabic,
     };
 
     handleAddSession(sessionData);
@@ -147,34 +144,32 @@ export default function AddSessionForm({
     const [hours, minutes] = time.split(":").map(Number);
     let period = "صباحاً";
 
+    let displayHours = hours;
+
     if (hours >= 12) {
       period = "مساءً";
+      if (hours > 12) {
+        displayHours = hours - 12;
+      }
+    } else if (hours === 0) {
+      displayHours = 12;
     }
 
-    const displayHours = hours % 12 || 12;
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes.toString();
+
     const arabicHours = toArabicNumbers(displayHours);
-    const arabicMinutes = toArabicNumbers(minutes.toString().padStart(2, "0"));
+    const arabicMinutes = toArabicNumbers(formattedMinutes);
 
     return `${arabicHours}:${arabicMinutes} ${period}`;
   };
 
-  const getCurrentDate = () => {
-    const today = new Date();
-    const day = today.getDate();
-    const month = today.getMonth() + 1;
-    const year = today.getFullYear();
-    return `${toArabicNumbers(day)}-${toArabicNumbers(month)}-${toArabicNumbers(
-      year
-    )}`;
-  };
-
-  const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const day = tomorrow.getDate();
-    const month = tomorrow.getMonth() + 1;
-    const year = tomorrow.getFullYear();
-    return `${toArabicNumbers(day)}-${toArabicNumbers(month)}-${toArabicNumbers(
+  const formatDateForDisplay = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    return `${toArabicNumbers(day)}/${toArabicNumbers(month)}/${toArabicNumbers(
       year
     )}`;
   };
@@ -303,7 +298,7 @@ export default function AddSessionForm({
                           />
                         </div>
 
-                        <div className="max-h-40 overflow-y-auto">
+                        <div className="max-h-40 overflow-y-auto add-session-form-scroll">
                           {clientsLoading ? (
                             <div className="p-4 text-center">
                               <p className="text-gray-400 text-sm">
@@ -451,48 +446,39 @@ export default function AddSessionForm({
 
                 {roomsDropdownOpen && (
                   <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-purple-500/30 rounded-lg shadow-xl shadow-purple-900/20 overflow-hidden backdrop-blur-sm">
-                    <div className="max-h-40 overflow-y-auto">
-                      {availableRooms
-                        .filter((room) => room.status === "متاحة")
-                        .map((room) => (
-                          <div
-                            key={room.id}
-                            onClick={() => handleRoomSelect(room.name)}
-                            className="flex items-center justify-between px-3 py-2.5 hover:bg-purple-500/10 cursor-pointer transition-all duration-200 group/item"
-                          >
-                            <div className="flex items-center">
-                              <div className="w-2 h-2 bg-green-400 rounded-full ml-2 animate-pulse"></div>
-                              <div>
-                                <span className="text-gray-300 group-hover/item:text-white">
-                                  {room.name}
-                                </span>
-                                <span className="text-xs text-gray-400 block">
+                    <div className="max-h-48 overflow-y-auto add-session-form-scroll">
+                      {availableRooms.map((room) => (
+                        <div
+                          key={room.id}
+                          onClick={() => handleRoomSelect(room.name)}
+                          className="flex items-center justify-between px-3 py-2.5 hover:bg-purple-500/10 cursor-pointer transition-all duration-200 group/item"
+                        >
+                          <div className="flex items-center">
+                            <div className="w-2 h-2 bg-green-400 rounded-full ml-2 animate-pulse"></div>
+                            <div>
+                              <span className="text-gray-300 group-hover/item:text-white">
+                                {room.name}
+                              </span>
+                              <div className="text-xs text-gray-400">
+                                <span>
                                   الساعة: {toArabicNumbers(room.hourCost || 0)}{" "}
                                   جنيه
                                 </span>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-reverse space-x-2">
-                              <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded">
-                                {room.status}
-                              </span>
-                              <DoorOpen
-                                size={14}
-                                className="text-purple-400 opacity-0 group-hover/item:opacity-100 transition-opacity"
-                              />
-                            </div>
                           </div>
-                        ))}
+                          <DoorOpen
+                            size={14}
+                            className="text-purple-400 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                          />
+                        </div>
+                      ))}
                     </div>
                     <div className="border-t border-gray-700 p-2 bg-gray-900/50">
                       <p className="text-xs text-gray-400 text-center">
-                        الغرف المتاحة:{" "}
+                        عدد الغرف:{" "}
                         <span className="font-bold text-green-400">
-                          {toArabicNumbers(
-                            availableRooms.filter(
-                              (room) => room.status === "متاحة"
-                            ).length
-                          )}
+                          {toArabicNumbers(availableRooms.length)}
                         </span>
                       </p>
                     </div>
@@ -501,7 +487,7 @@ export default function AddSessionForm({
               </div>
 
               {newSession.roomNumber && (
-                <div className="mt-3 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                <div className="mt-3 p-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="w-2 h-2 bg-green-400 rounded-full ml-2 animate-pulse"></div>
@@ -558,11 +544,34 @@ export default function AddSessionForm({
 
               <div className="mb-4">
                 <label className="flex items-center text-gray-300 mb-2 text-sm">
-                  <Clock size={16} className="ml-2 text-green-400" />
-                  <span>وقت البدء</span>
+                  <Calendar size={16} className="ml-2 text-emerald-400" />
+                  <span>تاريخ البدء *</span>
                 </label>
                 <div className="relative group">
-                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-emerald-500 rounded-r group-hover:from-green-400 group-hover:to-emerald-400 transition-all"></div>
+                  <input
+                    type="date"
+                    value={newSession.startDate}
+                    onChange={(e) =>
+                      setNewSession({
+                        ...newSession,
+                        startDate: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300 custom-date-input"
+                    required
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-400 text-xs font-bold">
+                    {formatDateForDisplay(newSession.startDate)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="flex items-center text-gray-300 mb-2 text-sm">
+                  <Clock size={16} className="ml-2 text-green-400" />
+                  <span>وقت البدء *</span>
+                </label>
+                <div className="relative group">
                   <input
                     type="time"
                     id="startTimeField"
@@ -573,9 +582,45 @@ export default function AddSessionForm({
                         startTime: e.target.value,
                       })
                     }
-                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300"
+                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300 custom-time-input"
                     required
                   />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-400 text-xs font-bold">
+                    {newSession.startTime
+                      ? convertTimeToArabic(newSession.startTime)
+                      : ""}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center text-gray-300 text-sm">
+                    <Calendar size={16} className="ml-2 text-blue-400" />
+                    <span>تاريخ الانتهاء</span>
+                  </label>
+                  <span className="text-xs text-gray-400 bg-gray-700/60 px-2 py-1 rounded">
+                    اختياري
+                  </span>
+                </div>
+                <div className="relative group">
+                  <input
+                    type="date"
+                    value={newSession.endDate || ""}
+                    onChange={(e) =>
+                      setNewSession({
+                        ...newSession,
+                        endDate: e.target.value,
+                      })
+                    }
+                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300 custom-date-input"
+                    min={newSession.startDate}
+                  />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 text-xs font-bold">
+                    {newSession.endDate
+                      ? formatDateForDisplay(newSession.endDate)
+                      : ""}
+                  </div>
                 </div>
               </div>
 
@@ -590,7 +635,6 @@ export default function AddSessionForm({
                   </span>
                 </div>
                 <div className="relative group">
-                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-r group-hover:from-blue-400 group-hover:to-cyan-400 transition-all"></div>
                   <input
                     type="time"
                     id="endTimeField"
@@ -601,9 +645,14 @@ export default function AddSessionForm({
                         endTime: e.target.value,
                       })
                     }
-                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300"
+                    className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300 custom-time-input"
                     placeholder="اختياري"
                   />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 text-xs font-bold">
+                    {newSession.endTime
+                      ? convertTimeToArabic(newSession.endTime)
+                      : ""}
+                  </div>
                 </div>
               </div>
             </div>
@@ -624,13 +673,15 @@ export default function AddSessionForm({
               !newSession.roomNumber ||
               !newSession.startTime ||
               !newSession.customerName ||
-              !newSession.phone
+              !newSession.phone ||
+              !newSession.startDate
             }
             className={`px-6 py-2.5 rounded-lg font-bold transition-all duration-300 flex items-center space-x-reverse space-x-2 group text-sm ${
               !newSession.roomNumber ||
               !newSession.startTime ||
               !newSession.customerName ||
-              !newSession.phone
+              !newSession.phone ||
+              !newSession.startDate
                 ? "bg-gray-700 cursor-not-allowed opacity-50"
                 : "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/30"
             }`}
@@ -654,7 +705,7 @@ export default function AddSessionForm({
         </div>
       </form>
 
-      <style jsx>{`
+      <style jsx global>{`
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -670,11 +721,11 @@ export default function AddSessionForm({
           animation: fadeIn 0.3s ease-out;
         }
 
-        .max-h-40::-webkit-scrollbar {
+        .add-session-form-scroll::-webkit-scrollbar {
           width: 8px;
         }
 
-        .max-h-40::-webkit-scrollbar-track {
+        .add-session-form-scroll::-webkit-scrollbar-track {
           background: linear-gradient(
             to bottom,
             rgba(30, 41, 59, 0.8),
@@ -684,7 +735,7 @@ export default function AddSessionForm({
           box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
         }
 
-        .max-h-40::-webkit-scrollbar-thumb {
+        .add-session-form-scroll::-webkit-scrollbar-thumb {
           background: linear-gradient(
             180deg,
             rgba(139, 92, 246, 0.9),
@@ -696,7 +747,7 @@ export default function AddSessionForm({
             inset 0 0 0 1px rgba(255, 255, 255, 0.1);
         }
 
-        .max-h-40::-webkit-scrollbar-thumb:hover {
+        .add-session-form-scroll::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(
             180deg,
             rgba(167, 139, 250, 0.95),
@@ -706,7 +757,7 @@ export default function AddSessionForm({
             inset 0 0 0 1px rgba(255, 255, 255, 0.2);
         }
 
-        .max-h-40::-webkit-scrollbar-thumb:active {
+        .add-session-form-scroll::-webkit-scrollbar-thumb:active {
           background: linear-gradient(
             180deg,
             rgba(147, 51, 234, 0.95),
@@ -714,80 +765,82 @@ export default function AddSessionForm({
           );
         }
 
-        .max-h-40::-webkit-scrollbar-corner {
+        .add-session-form-scroll::-webkit-scrollbar-corner {
           background: transparent;
         }
 
-        .max-h-40 {
+        .add-session-form-scroll {
           scrollbar-width: thin;
           scrollbar-color: rgba(139, 92, 246, 0.8) rgba(30, 41, 59, 0.5);
         }
 
-        .max-h-40::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 15px;
-          background: linear-gradient(
-            to bottom,
-            rgba(31, 41, 55, 0.95),
-            transparent
-          );
-          pointer-events: none;
-          z-index: 1;
-          border-radius: 8px 8px 0 0;
+        .custom-date-input::-webkit-datetime-edit {
+          color: transparent !important;
         }
 
-        .max-h-40::after {
-          content: "";
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 15px;
-          background: linear-gradient(
-            to top,
-            rgba(31, 41, 55, 0.95),
-            transparent
-          );
-          pointer-events: none;
-          z-index: 1;
-          border-radius: 0 0 8px 8px;
+        .custom-date-input::-webkit-datetime-edit-fields-wrapper {
+          color: transparent !important;
         }
 
-        input[type="time"] {
-          color-scheme: dark;
-          -webkit-appearance: none;
-          appearance: none;
+        .custom-date-input::-webkit-datetime-edit-year-field,
+        .custom-date-input::-webkit-datetime-edit-month-field,
+        .custom-date-input::-webkit-datetime-edit-day-field {
+          color: transparent !important;
         }
 
-        input[type="time"]::-webkit-calendar-picker-indicator {
-          filter: invert(0.7);
+        .custom-date-input::-webkit-inner-spin-button,
+        .custom-date-input::-webkit-calendar-picker-indicator {
           opacity: 0.7;
           cursor: pointer;
-          margin-left: 4px;
+          filter: invert(0.7);
         }
 
-        input[type="time"]::-webkit-calendar-picker-indicator:hover {
+        .custom-date-input::-webkit-calendar-picker-indicator:hover {
           opacity: 1;
           filter: invert(1);
         }
 
-        #startTimeField {
-          color: #10b981 !important;
+        .custom-time-input::-webkit-datetime-edit {
+          color: transparent !important;
         }
 
-        #startTimeField::-webkit-datetime-edit-fields-wrapper {
-          color: #10b981 !important;
+        .custom-time-input::-webkit-datetime-edit-fields-wrapper {
+          color: transparent !important;
         }
 
-        #startTimeField::-webkit-datetime-edit-hour-field,
-        #startTimeField::-webkit-datetime-edit-minute-field,
-        #startTimeField::-webkit-datetime-edit-ampm-field {
-          color: #10b981 !important;
-          background: transparent;
+        .custom-time-input::-webkit-datetime-edit-hour-field,
+        .custom-time-input::-webkit-datetime-edit-minute-field,
+        .custom-time-input::-webkit-datetime-edit-ampm-field {
+          color: transparent !important;
+        }
+
+        .custom-time-input::-webkit-calendar-picker-indicator {
+          opacity: 0.7;
+          cursor: pointer;
+          filter: invert(0.7);
+        }
+
+        .custom-time-input::-webkit-calendar-picker-indicator:hover {
+          opacity: 1;
+          filter: invert(1);
+        }
+
+        #startTimeField,
+        #endTimeField {
+          color-scheme: dark;
+        }
+
+        .custom-date-input,
+        .custom-time-input {
+          color-scheme: dark;
+          -webkit-appearance: none;
+          appearance: none;
+          background: rgba(55, 65, 81, 0.6) !important;
+        }
+
+        .custom-date-input:hover,
+        .custom-time-input:hover {
+          background: rgba(55, 65, 81, 0.8) !important;
         }
 
         #startTimeField::-webkit-calendar-picker-indicator {
@@ -795,49 +848,9 @@ export default function AddSessionForm({
             brightness(1.3) !important;
         }
 
-        #endTimeField {
-          color: #0ea5e9 !important;
-        }
-
-        #endTimeField::-webkit-datetime-edit-fields-wrapper {
-          color: #0ea5e9 !important;
-        }
-
-        #endTimeField::-webkit-datetime-edit-hour-field,
-        #endTimeField::-webkit-datetime-edit-minute-field,
-        #endTimeField::-webkit-datetime-edit-ampm-field {
-          color: #0ea5e9 !important;
-          background: transparent;
-        }
-
         #endTimeField::-webkit-calendar-picker-indicator {
           filter: invert(0.7) sepia(1) saturate(10) hue-rotate(200deg)
             brightness(1.3) !important;
-        }
-
-        #startTimeField::-webkit-datetime-edit-text {
-          color: rgba(16, 185, 129, 0.7) !important;
-        }
-
-        #endTimeField::-webkit-datetime-edit-text {
-          color: rgba(14, 165, 233, 0.7) !important;
-        }
-
-        input[type="time"] {
-          background: rgba(55, 65, 81, 0.6) !important;
-        }
-
-        input[type="time"]:hover {
-          background: rgba(55, 65, 81, 0.8) !important;
-        }
-
-        input[type="time"]:invalid,
-        input[type="time"]:valid,
-        input[type="time"][value=""]::-webkit-datetime-edit-fields-wrapper,
-        input[type="time"]:not(
-            [value=""]
-          )::-webkit-datetime-edit-fields-wrapper {
-          color: inherit !important;
         }
       `}</style>
     </div>

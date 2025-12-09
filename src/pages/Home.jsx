@@ -28,6 +28,7 @@ export default function Home() {
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+
   const [newSession, setNewSession] = useState({
     customerName: "",
     phone: "",
@@ -35,6 +36,8 @@ export default function Home() {
     roomNumber: "",
     startTime: "",
     endTime: "",
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: "",
     notes: "",
     clientNotes: "",
     discount: 0,
@@ -331,6 +334,8 @@ export default function Home() {
         initialTimerValues[session.id] = calculateTimerValue(session);
       });
       setTimerValues(initialTimerValues);
+
+      await fetchRooms();
     } catch (error) {
       console.error("خطأ في جلب الجلسات:", error);
     } finally {
@@ -342,24 +347,19 @@ export default function Home() {
     try {
       const response = await axiosInstance.get("/api/Rooms/GetAll");
 
-      const formattedRooms = response.data.map((room) => ({
-        id: room.id,
-        name: room.name,
-        status: room.isAvailable ? "متاحة" : "مشغولة",
-        hourCost: room.hourCost,
-      }));
+      const formattedRooms = response.data
+        .filter((room) => room.isActive)
+        .map((room) => ({
+          id: room.id,
+          name: room.name,
+          isAvailable: room.isAvailable,
+          hourCost: room.hourCost,
+          notes: room.notes || "",
+        }));
 
       setAvailableRooms(formattedRooms);
     } catch (error) {
       console.error("خطأ في جلب الغرف:", error);
-      setAvailableRooms([
-        { id: 1, name: "غرفة ١", status: "متاحة", hourCost: 40 },
-        { id: 2, name: "غرفة ٢", status: "متاحة", hourCost: 190 },
-        { id: 3, name: "غرفة ٣", status: "متاحة", hourCost: 50 },
-        { id: 4, name: "غرفة ٤", status: "متاحة", hourCost: 60 },
-        { id: 5, name: "غرفة ٥", status: "قيد الصيانة", hourCost: 70 },
-        { id: 6, name: "غرفة ٦", status: "متاحة", hourCost: 80 },
-      ]);
     }
   };
 
@@ -497,6 +497,7 @@ export default function Home() {
       );
 
       await fetchSessions();
+      await fetchRooms();
 
       handleCloseEditModal();
 
@@ -563,14 +564,7 @@ export default function Home() {
           return newValues;
         });
 
-        const updatedRooms = availableRooms.map((room) => {
-          if (room.name === roomNumber) {
-            return { ...room, status: "متاحة" };
-          }
-          return room;
-        });
-
-        setAvailableRooms(updatedRooms);
+        await fetchRooms();
 
         Swal.fire({
           title: "تم الحذف!",
@@ -708,6 +702,7 @@ export default function Home() {
           await printSessionReceipt(receiptData);
 
           await fetchSessions();
+          await fetchRooms();
 
           Swal.fire({
             icon: "success",
@@ -1020,6 +1015,69 @@ ${
     );
   };
 
+  const convertArabicTimeToISO = (arabicTime, arabicDate) => {
+    if (!arabicTime || !arabicDate) {
+      console.error("الوقت أو التاريخ فارغ:", { arabicTime, arabicDate });
+      return null;
+    }
+
+    try {
+      const englishTime = toEnglishNumbers(arabicTime);
+      const englishDate = toEnglishNumbers(arabicDate);
+
+      console.log("تاريخ مدخل:", arabicDate);
+      console.log("تاريخ محول:", englishDate);
+      console.log("وقت مدخل:", arabicTime);
+      console.log("وقت محول:", englishTime);
+
+      let day, month, year;
+
+      if (englishDate.includes("-")) {
+        [day, month, year] = englishDate.split("-").map(Number);
+      } else if (englishDate.includes("/")) {
+        [day, month, year] = englishDate.split("/").map(Number);
+      } else {
+        console.error("صيغة التاريخ غير مدعومة:", englishDate);
+        return null;
+      }
+
+      if (isNaN(day) || isNaN(month) || isNaN(year)) {
+        console.error("تاريخ غير صالح:", { day, month, year });
+        return null;
+      }
+
+      let timeParts = englishTime.split(" ");
+      let time = timeParts[0];
+      let period = timeParts[1] || "";
+
+      let [hours, minutes] = time.split(":").map(Number);
+
+      if (isNaN(hours) || isNaN(minutes)) {
+        console.error("وقت غير صالح:", { hours, minutes });
+        return null;
+      }
+
+      if (period.includes("مساءً") || period.includes("ظهراً")) {
+        if (hours < 12) hours += 12;
+      } else if (period.includes("صباحاً") && hours === 12) {
+        hours = 0;
+      }
+
+      const date = new Date(year, month - 1, day, hours, minutes);
+
+      if (isNaN(date.getTime())) {
+        console.error("تاريخ غير صالح بعد الإنشاء:", date);
+        return null;
+      }
+
+      console.log("تاريخ ISO النهائي:", date.toISOString());
+      return date.toISOString();
+    } catch (error) {
+      console.error("خطأ في تحويل التاريخ والوقت:", error);
+      return null;
+    }
+  };
+
   const handleAddSession = async (sessionData) => {
     try {
       const selectedRoom = availableRooms.find(
@@ -1038,14 +1096,48 @@ ${
         return;
       }
 
+      const startDateArabic = sessionData.startDate;
+      const startTimeArabic = sessionData.startTime;
+
+      console.log("تاريخ البدء العربي:", startDateArabic);
+      console.log("وقت البدء العربي:", startTimeArabic);
+
       const startTimeISO = convertArabicTimeToISO(
-        sessionData.startTime,
-        sessionData.date
+        startTimeArabic,
+        startDateArabic
       );
-      const endTimeISO = convertArabicTimeToISO(
-        sessionData.endTime,
-        sessionData.date
-      );
+
+      if (!startTimeISO) {
+        Swal.fire({
+          title: "خطأ في التاريخ أو الوقت",
+          text: "التاريخ أو الوقت غير صالح. يرجى التحقق من البيانات المدخلة.",
+          icon: "error",
+          confirmButtonColor: "#d33",
+          background: "#0f172a",
+          color: "#e2e8f0",
+        });
+        return;
+      }
+
+      console.log("وقت البدء ISO:", startTimeISO);
+
+      let endTimeISO = null;
+      if (sessionData.endTime) {
+        const endDateArabic = sessionData.endDate || sessionData.startDate;
+        const endTimeArabic = sessionData.endTime;
+
+        console.log("تاريخ الانتهاء العربي:", endDateArabic);
+        console.log("وقت الانتهاء العربي:", endTimeArabic);
+
+        endTimeISO = convertArabicTimeToISO(endTimeArabic, endDateArabic);
+
+        if (!endTimeISO) {
+          console.warn("وقت الانتهاء غير صالح، سيتم تجاهله");
+          endTimeISO = null;
+        } else {
+          console.log("وقت الانتهاء ISO:", endTimeISO);
+        }
+      }
 
       const requestData = {
         roomId: selectedRoom.id,
@@ -1082,15 +1174,7 @@ ${
       await axiosInstance.post("/api/Sessions/Add", requestData);
 
       await fetchSessions();
-
-      const updatedRooms = availableRooms.map((room) => {
-        if (room.name === sessionData.roomNumber) {
-          return { ...room, status: "مشغولة" };
-        }
-        return room;
-      });
-
-      setAvailableRooms(updatedRooms);
+      await fetchRooms();
 
       setNewSession({
         customerName: "",
@@ -1099,6 +1183,8 @@ ${
         roomNumber: "",
         startTime: "",
         endTime: "",
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: "",
         notes: "",
         clientNotes: "",
         discount: 0,
@@ -1130,27 +1216,6 @@ ${
         color: "#e2e8f0",
       });
     }
-  };
-
-  const convertArabicTimeToISO = (arabicTime, arabicDate) => {
-    const englishTime = toEnglishNumbers(arabicTime);
-    const englishDate = toEnglishNumbers(arabicDate);
-
-    let [day, month, year] = englishDate.split("-").map(Number);
-    let [time, period] = englishTime.split(" ");
-
-    let [hours, minutes] = time.split(":").map(Number);
-
-    if (period === "مساءً" && hours < 12) {
-      hours += 12;
-    } else if (period === "ظهراً" && hours < 12) {
-      hours += 12;
-    } else if (period === "صباحاً" && hours === 12) {
-      hours = 0;
-    }
-
-    const date = new Date(year, month - 1, day, hours, minutes);
-    return date.toISOString();
   };
 
   const convertTo24HourFormat = (arabicTime) => {

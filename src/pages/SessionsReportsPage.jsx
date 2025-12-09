@@ -165,11 +165,11 @@ const SessionsReportsPage = () => {
   const calculateStats = (sessionsData) => {
     const totalSessions = sessionsData.length;
     const totalRevenue = sessionsData.reduce(
-      (sum, session) => sum + session.finalPrice,
+      (sum, session) => sum + (session.finalPrice || 0),
       0
     );
     const totalHours = sessionsData.reduce(
-      (sum, session) => sum + session.totalHours,
+      (sum, session) => sum + (session.totalHours || 0),
       0
     );
     const activeSessions = sessionsData.filter(
@@ -197,7 +197,12 @@ const SessionsReportsPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    return `${amount.toLocaleString("ar-EG")} ج.م`;
+    // تحقق من وجود القيمة وأنها رقم
+    if (amount === null || amount === undefined || isNaN(amount)) {
+      return "0 ج.م";
+    }
+
+    return `${Number(amount).toLocaleString("ar-EG")} ج.م`;
   };
 
   const formatDate = (dateString) => {
@@ -551,11 +556,13 @@ ${
           )}</span></td>
             <td>${formatDateTime(session.startTime)}</td>
             <td>${formatDateTime(session.endTime)}</td>
-            <td>${formatHours(session.totalHours)}</td>
-            <td>${formatCurrency(session.room.hourCost)}</td>
-            <td>${formatCurrency(session.sessionPrice)}</td>
-            <td>${formatCurrency(session.discount)}</td>
-            <td class="total-amount">${formatCurrency(session.finalPrice)}</td>
+            <td>${formatHours(session.totalHours || 0)}</td>
+            <td>${formatCurrency(session.room?.hourCost || 0)}</td>
+            <td>${formatCurrency(session.sessionPrice || 0)}</td>
+            <td>${formatCurrency(session.discount || 0)}</td>
+            <td class="total-amount">${formatCurrency(
+              session.finalPrice || 0
+            )}</td>
           </tr>
         `;
         })
@@ -1038,19 +1045,20 @@ ${
 
                       <td className="py-4 px-6">
                         <div className="text-sm text-cyan-300 font-medium">
-                          {formatHours(session.totalHours)}
+                          {formatHours(session.totalHours || 0)}
                         </div>
                       </td>
 
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
                           <span className="px-3 py-1 bg-gradient-to-r from-emerald-600/20 to-green-600/20 text-emerald-300 rounded-full text-sm font-bold border border-emerald-600/30">
-                            {formatCurrency(session.finalPrice)}
+                            {formatCurrency(session.finalPrice || 0)}
                           </span>
                           {session.discount > 0 && (
                             <span className="text-xs text-amber-400 line-through">
                               {formatCurrency(
-                                session.sessionPrice + session.discount
+                                (session.sessionPrice || 0) +
+                                  (session.discount || 0)
                               )}
                             </span>
                           )}
@@ -1221,8 +1229,9 @@ ${
                               المدة الإجمالية:
                             </span>
                             <span className="font-bold text-cyan-400">
-                              {formatHours(selectedSession.totalHours)} (
-                              {selectedSession.totalHours.toFixed(2)} ساعة)
+                              {formatHours(selectedSession.totalHours || 0)} (
+                              {(selectedSession.totalHours || 0).toFixed(2)}{" "}
+                              ساعة)
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
@@ -1248,19 +1257,21 @@ ${
                           <div className="flex items-center justify-between">
                             <span className="text-gray-400">سعر الجلسة:</span>
                             <span className="font-bold text-white">
-                              {formatCurrency(selectedSession.sessionPrice)}
+                              {formatCurrency(
+                                selectedSession.sessionPrice || 0
+                              )}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-gray-400">سعر المنتجات:</span>
                             <span className="font-bold text-white">
-                              {formatCurrency(selectedSession.itemsPrice)}
+                              {formatCurrency(selectedSession.itemsPrice || 0)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-gray-400">الخصم:</span>
                             <span className="font-bold text-amber-400">
-                              {formatCurrency(selectedSession.discount)}
+                              {formatCurrency(selectedSession.discount || 0)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
@@ -1269,8 +1280,8 @@ ${
                             </span>
                             <span className="font-bold text-white">
                               {formatCurrency(
-                                selectedSession.sessionPrice +
-                                  selectedSession.itemsPrice
+                                (selectedSession.sessionPrice || 0) +
+                                  (selectedSession.itemsPrice || 0)
                               )}
                             </span>
                           </div>
@@ -1279,7 +1290,7 @@ ${
                               السعر النهائي:
                             </span>
                             <span className="text-2xl font-bold text-emerald-400">
-                              {formatCurrency(selectedSession.finalPrice)}
+                              {formatCurrency(selectedSession.finalPrice || 0)}
                             </span>
                           </div>
                         </div>
@@ -1356,12 +1367,12 @@ ${
                                   </td>
                                   <td className="py-3 px-4">
                                     <span className="text-gray-300">
-                                      {formatCurrency(item.unitPrice)}
+                                      {formatCurrency(item.unitPrice || 0)}
                                     </span>
                                   </td>
                                   <td className="py-3 px-4">
                                     <span className="font-bold text-emerald-400">
-                                      {formatCurrency(item.totalPrice)}
+                                      {formatCurrency(item.totalPrice || 0)}
                                     </span>
                                   </td>
                                   <td className="py-3 px-4">
@@ -1382,7 +1393,9 @@ ${
                                 </td>
                                 <td colSpan="2" className="py-3 px-4">
                                   <span className="text-xl font-bold text-emerald-400">
-                                    {formatCurrency(selectedSession.itemsPrice)}
+                                    {formatCurrency(
+                                      selectedSession.itemsPrice || 0
+                                    )}
                                   </span>
                                 </td>
                               </tr>

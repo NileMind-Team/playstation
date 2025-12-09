@@ -9,6 +9,10 @@ export const getSessionStatusText = (status) => {
   return statusMap[status] || status;
 };
 
+export const getRoomStatusText = (isAvailable) => {
+  return isAvailable ? "متاحة" : "مشغولة";
+};
+
 export const shouldDisplaySession = (session) => {
   return session.status !== "Payed";
 };
@@ -73,6 +77,19 @@ export const getTomorrowDate = () => {
   const day = tomorrow.getDate();
   const month = tomorrow.getMonth() + 1;
   const year = tomorrow.getFullYear();
+  return `${toArabicNumbers(day)}-${toArabicNumbers(month)}-${toArabicNumbers(
+    year
+  )}`;
+};
+
+export const formatInputDateToArabic = (dateString) => {
+  if (!dateString) return getCurrentDate();
+
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
   return `${toArabicNumbers(day)}-${toArabicNumbers(month)}-${toArabicNumbers(
     year
   )}`;

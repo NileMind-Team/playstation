@@ -223,6 +223,8 @@ export default function SessionCard({
 
   const statusInfo = getSessionStatusInfo(session.status);
 
+  const isPending = session.status === "Pending";
+
   return (
     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] group relative">
       <div
@@ -326,8 +328,13 @@ export default function SessionCard({
           </button>
 
           <button
-            onClick={() => onCompleteSession(session)}
-            className="flex items-center justify-center bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-2 rounded-lg transition hover:scale-105 text-sm"
+            onClick={() => !isPending && onCompleteSession(session)}
+            disabled={isPending}
+            className={`flex items-center justify-center py-2 rounded-lg transition text-sm ${
+              isPending
+                ? "bg-gradient-to-r from-gray-600 to-gray-700 cursor-not-allowed opacity-60"
+                : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:scale-105"
+            }`}
           >
             <CheckCircle size={16} className="ml-1" />
             <span>إتمام الجلسة</span>
