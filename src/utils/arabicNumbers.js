@@ -4,7 +4,7 @@ export const getSessionStatusText = (status) => {
     Active: "نشطة",
     Finished: "منتهية",
     Cancelled: "ملغية",
-    Payed: "مدفوعة", // ✅ الحالة الجديدة
+    Payed: "مدفوعة",
   };
   return statusMap[status] || status;
 };
