@@ -174,6 +174,14 @@ export default function AddSessionForm({
     )}`;
   };
 
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   return (
     <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-black rounded-2xl overflow-hidden border-2 border-blue-500/30 shadow-2xl shadow-blue-900/20 mb-8 animate-fadeIn">
       <div className="bg-gradient-to-r from-blue-600/30 to-purple-600/30 p-5 border-b border-blue-500/30">
@@ -557,6 +565,7 @@ export default function AddSessionForm({
                         startDate: e.target.value,
                       })
                     }
+                    min={getTodayDate()}
                     className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300 custom-date-input"
                     required
                   />
@@ -613,8 +622,8 @@ export default function AddSessionForm({
                         endDate: e.target.value,
                       })
                     }
+                    min={newSession.startDate || getTodayDate()}
                     className="w-full bg-gray-700/60 border border-gray-600 rounded-lg py-2.5 px-3 pr-5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent hover:bg-gray-700/80 transition-all duration-300 custom-date-input"
-                    min={newSession.startDate}
                   />
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 text-xs font-bold">
                     {newSession.endDate
