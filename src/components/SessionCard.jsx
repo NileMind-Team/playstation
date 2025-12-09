@@ -64,6 +64,12 @@ export default function SessionCard({
     return `${toArabicNumbers(number)} ساعة`;
   };
 
+  const truncateName = (name, maxLength = 20) => {
+    if (!name) return "";
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength) + "...";
+  };
+
   const getSessionStatusInfo = (status) => {
     const statusMap = {
       Pending: {
@@ -218,26 +224,31 @@ export default function SessionCard({
 
       <div className="p-6 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
         <div className="flex justify-between items-start mb-4">
-          <div>
+          <div className="min-w-0">
+            {" "}
             <h3 className="text-xl font-bold flex items-center">
-              <UserCircle size={24} className="ml-2 text-blue-400" />
-              <span>{session.customerName}</span>
+              <UserCircle
+                size={24}
+                className="ml-2 text-blue-400 flex-shrink-0"
+              />
+              <span className="truncate" title={session.customerName}>
+                {truncateName(session.customerName)}
+              </span>
             </h3>
             <p className="text-gray-400 text-sm mt-1 flex items-center">
-              <Phone size={16} className="ml-1" />
+              <Phone size={16} className="ml-1 flex-shrink-0" />
               <span>{session.phone}</span>
             </p>
           </div>
 
           <div
-            className={`flex items-center gap-2 ${statusInfo.bgColor} backdrop-blur-sm px-3 py-1.5 rounded-full`}
+            className={`flex items-center gap-2 ${statusInfo.bgColor} backdrop-blur-sm px-3 py-1.5 rounded-full flex-shrink-0`}
           >
             <span
               className={`inline-block w-2.5 h-2.5 ${statusInfo.dotColor} rounded-full animate-pulse`}
             ></span>
             <span className={`${statusInfo.color} text-sm font-medium`}>
-              {session.statusText || statusInfo.text}{" "}
-              {/* ✅ استخدام statusText */}
+              {session.statusText || statusInfo.text}
             </span>
           </div>
         </div>
@@ -301,7 +312,7 @@ export default function SessionCard({
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 mb-3">
           <button
             onClick={() => onOpenCashier(session)}
             className="flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-xl transition hover:scale-105"
@@ -315,15 +326,17 @@ export default function SessionCard({
             className="flex items-center justify-center bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 py-3 rounded-xl transition hover:scale-105"
           >
             <CheckCircle size={18} className="ml-2" />
-            <span>إتمام</span>
+            <span>إتمام الجلسة</span>
           </button>
+        </div>
 
+        <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => onOpenEditModal(session)}
             className="flex items-center justify-center bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 py-3 rounded-xl transition hover:scale-105"
           >
             <Edit size={18} className="ml-2" />
-            <span>تعديل</span>
+            <span>تعديل الجلسة</span>
           </button>
 
           <button
@@ -331,7 +344,7 @@ export default function SessionCard({
             className="flex items-center justify-center bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 py-3 rounded-xl transition hover:scale-105"
           >
             <Trash2 size={18} className="ml-2" />
-            <span>حذف</span>
+            <span>حذف الجلسة</span>
           </button>
         </div>
       </div>

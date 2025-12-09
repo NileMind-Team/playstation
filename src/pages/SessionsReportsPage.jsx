@@ -14,6 +14,8 @@ import {
   Gamepad2,
   X,
   Sparkles,
+  Package,
+  CreditCard,
 } from "lucide-react";
 import axiosInstance from "../api/axiosInstance";
 import Swal from "sweetalert2";
@@ -44,6 +46,7 @@ const SessionsReportsPage = () => {
     totalHours: 0,
     activeSessions: 0,
     finishedSessions: 0,
+    payedSessions: 0,
   });
   const [selectedSession, setSelectedSession] = useState(null);
   const [showSessionDetails, setShowSessionDetails] = useState(false);
@@ -88,21 +91,28 @@ const SessionsReportsPage = () => {
     };
   }, [navigate]);
 
-  const fetchSessions = async () => {
+  const fetchSessions = async (showSuccessMessage = false) => {
     try {
       setLoading(true);
 
       let params = {};
       if (dateRange.startDate) {
-        const startDate = new Date(dateRange.startDate);
-        startDate.setHours(2, 0, 0, 0); // تم التعديل ليكون 2 صباحاً
-        params.startRange = startDate.toISOString();
+        const year = dateRange.startDate.getFullYear();
+        const month = String(dateRange.startDate.getMonth() + 1).padStart(
+          2,
+          "0"
+        );
+        const day = String(dateRange.startDate.getDate()).padStart(2, "0");
+        params.startRange = `${year}-${month}-${day}`;
       }
       if (dateRange.endDate) {
-        const endDate = new Date(dateRange.endDate);
-        endDate.setHours(25, 59, 59, 999); // تم التعديل ليكون 25 ساعة (1 صباحاً من اليوم التالي)
-        params.endRange = endDate.toISOString();
+        const year = dateRange.endDate.getFullYear();
+        const month = String(dateRange.endDate.getMonth() + 1).padStart(2, "0");
+        const day = String(dateRange.endDate.getDate()).padStart(2, "0");
+        params.endRange = `${year}-${month}-${day}`;
       }
+
+      console.log("Request params:", params);
 
       const response = await axiosInstance.get("/api/Sessions/GetAll", {
         params,
@@ -115,17 +125,18 @@ const SessionsReportsPage = () => {
       calculateStats(sessionsData);
       setIsFilterApplied(false);
 
-      // إخفاء رسالة النجاح بعد التصفية مباشرة
-      Swal.fire({
-        title: "تم التصفية",
-        text: "تم تطبيق الفلاتر بنجاح",
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-        background: "#0f172a",
-        color: "#e2e8f0",
-        backdrop: "rgba(0, 0, 0, 0.7)",
-      });
+      if (showSuccessMessage) {
+        Swal.fire({
+          title: "تم التصفية",
+          text: "تم تطبيق الفلاتر بنجاح",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+          background: "#0f172a",
+          color: "#e2e8f0",
+          backdrop: "rgba(0, 0, 0, 0.7)",
+        });
+      }
     } catch (error) {
       console.error("خطأ في جلب الجلسات:", error);
       Swal.fire({
@@ -146,7 +157,7 @@ const SessionsReportsPage = () => {
 
   useEffect(() => {
     if (isAdmin) {
-      fetchSessions();
+      fetchSessions(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
@@ -167,6 +178,9 @@ const SessionsReportsPage = () => {
     const finishedSessions = sessionsData.filter(
       (session) => session.status === "Finished"
     ).length;
+    const payedSessions = sessionsData.filter(
+      (session) => session.status === "Payed"
+    ).length;
 
     setStats({
       totalSessions,
@@ -174,11 +188,12 @@ const SessionsReportsPage = () => {
       totalHours: parseFloat(totalHours.toFixed(2)),
       activeSessions,
       finishedSessions,
+      payedSessions,
     });
   };
 
   const handleManualFilter = () => {
-    fetchSessions();
+    fetchSessions(true);
   };
 
   const formatCurrency = (amount) => {
@@ -208,6 +223,8 @@ const SessionsReportsPage = () => {
         return "from-emerald-600/20 to-green-600/20 text-emerald-300 border-emerald-600/30";
       case "Finished":
         return "from-blue-600/20 to-cyan-600/20 text-blue-300 border-blue-600/30";
+      case "Payed":
+        return "from-purple-600/20 to-violet-600/20 text-purple-300 border-purple-600/30";
       case "Pending":
         return "from-amber-600/20 to-orange-600/20 text-amber-300 border-amber-600/30";
       case "Cancelled":
@@ -223,12 +240,31 @@ const SessionsReportsPage = () => {
         return "نشطة";
       case "Finished":
         return "مكتملة";
+      case "Payed":
+        return "مدفوعة";
       case "Pending":
         return "قيد الانتظار";
       case "Cancelled":
         return "ملغية";
       default:
         return status;
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Active":
+        return <Sparkles size={16} />;
+      case "Finished":
+        return <Calendar size={16} />;
+      case "Payed":
+        return <CreditCard size={16} />;
+      case "Pending":
+        return <Clock size={16} />;
+      case "Cancelled":
+        return <X size={16} />;
+      default:
+        return <Sparkles size={16} />;
     }
   };
 
@@ -400,6 +436,11 @@ const SessionsReportsPage = () => {
     color: #1e40af !important;
   }
   
+  .status-payed {
+    background: #ede9fe !important;
+    color: #5b21b6 !important;
+  }
+  
   .status-pending {
     background: #fef3c7 !important;
     color: #92400e !important;
@@ -461,16 +502,16 @@ const SessionsReportsPage = () => {
     <p>${formatCurrency(stats.totalRevenue)}</p>
   </div>
   <div class="stat-card">
-    <h3>إجمالي الساعات</h3>
-    <p>${stats.totalHours}</p>
-  </div>
-  <div class="stat-card">
     <h3>الجلسات النشطة</h3>
     <p>${stats.activeSessions}</p>
   </div>
   <div class="stat-card">
     <h3>الجلسات المكتملة</h3>
-    <p>${stats.FinishedSessions}</p>
+    <p>${stats.finishedSessions}</p>
+  </div>
+  <div class="stat-card">
+    <h3>الجلسات المدفوعة</h3>
+    <p>${stats.payedSessions}</p>
   </div>
 </div>
 
@@ -569,7 +610,7 @@ ${
     setSearchTerm("");
     setShowFilters(false);
     setIsFilterApplied(false);
-    fetchSessions();
+    fetchSessions(false);
   };
 
   const handleStartDateChange = (date) => {
@@ -674,7 +715,7 @@ ${
               </button>
 
               <button
-                onClick={fetchSessions}
+                onClick={() => fetchSessions(false)} // تحديث بدون رسالة نجاح
                 className="p-3 bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl border border-gray-600 hover:border-blue-500 hover:bg-gray-700 transition-all duration-300"
                 title="تحديث البيانات"
               >
@@ -813,20 +854,6 @@ ${
             <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">إجمالي الساعات</p>
-                  <p className="text-2xl font-bold text-cyan-400">
-                    {stats.totalHours}
-                  </p>
-                </div>
-                <div className="p-3 bg-gradient-to-br from-cyan-600/20 to-blue-600/20 rounded-xl">
-                  <Clock size={24} className="text-cyan-400" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div>
                   <p className="text-gray-400 text-sm">الجلسات النشطة</p>
                   <p className="text-2xl font-bold text-emerald-400">
                     {stats.activeSessions}
@@ -848,6 +875,20 @@ ${
                 </div>
                 <div className="p-3 bg-gradient-to-br from-blue-600/20 to-cyan-600/20 rounded-xl">
                   <Calendar size={24} className="text-blue-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">الجلسات المدفوعة</p>
+                  <p className="text-2xl font-bold text-purple-400">
+                    {stats.payedSessions}
+                  </p>
+                </div>
+                <div className="p-3 bg-gradient-to-br from-purple-600/20 to-violet-600/20 rounded-xl">
+                  <CreditCard size={24} className="text-purple-400" />
                 </div>
               </div>
             </div>
@@ -971,13 +1012,16 @@ ${
                       </td>
 
                       <td className="py-4 px-6">
-                        <span
-                          className={`px-3 py-1 bg-gradient-to-r ${getStatusColor(
-                            session.status
-                          )} rounded-full text-sm font-medium`}
-                        >
-                          {getStatusLabel(session.status)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-3 py-1 bg-gradient-to-r ${getStatusColor(
+                              session.status
+                            )} rounded-full text-sm font-medium flex items-center gap-2`}
+                          >
+                            {getStatusIcon(session.status)}
+                            {getStatusLabel(session.status)}
+                          </span>
+                        </div>
                       </td>
 
                       <td className="py-4 px-6">
@@ -1022,14 +1066,26 @@ ${
 
         {showSessionDetails && selectedSession && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="relative w-full max-w-4xl">
+            <div className="relative w-full max-w-6xl">
               <div className="absolute -inset-3 bg-gradient-to-r from-blue-600 via-cyan-600 to-purple-600 rounded-3xl blur-xl opacity-30"></div>
-              <div className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden">
+              <div
+                className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700/50 shadow-2xl overflow-hidden"
+                style={{ maxHeight: "90vh" }}
+              >
+                {/* Header */}
                 <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-900/80 to-gray-800/80">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-lg">
-                        <Gamepad2 size={20} className="text-blue-400" />
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-xl">
+                        <Gamepad2 size={24} className="text-blue-400" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-white">
+                          تفاصيل الجلسة #{selectedSession.id}
+                        </h2>
+                        <p className="text-gray-400 text-sm mt-1">
+                          كود الجلسة: {selectedSession.sessionCode}
+                        </p>
                       </div>
                     </div>
                     <button
@@ -1041,11 +1097,16 @@ ${
                   </div>
                 </div>
 
-                <div className="p-6">
+                {/* Content with scroll */}
+                <div
+                  className="p-6 overflow-y-auto"
+                  style={{ maxHeight: "calc(90vh - 100px)" }}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div className="space-y-4">
                       <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4">
-                        <h3 className="text-lg font-bold text-white mb-3">
+                        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                          <Users size={18} />
                           معلومات العميل
                         </h3>
                         <div className="space-y-3">
@@ -1069,11 +1130,26 @@ ${
                               {formatDate(selectedSession.client.dateJoined)}
                             </span>
                           </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-400">حالة العميل:</span>
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${
+                                selectedSession.client.isActive
+                                  ? "bg-emerald-600/20 text-emerald-300"
+                                  : "bg-gray-600/20 text-gray-300"
+                              }`}
+                            >
+                              {selectedSession.client.isActive
+                                ? "نشط"
+                                : "غير نشط"}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4">
-                        <h3 className="text-lg font-bold text-white mb-3">
+                        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                          <DoorOpen size={18} />
                           معلومات الغرفة
                         </h3>
                         <div className="space-y-3">
@@ -1090,13 +1166,23 @@ ${
                             </span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-gray-400">الحالة:</span>
+                            <span className="text-gray-400">حالة الغرفة:</span>
                             <span
-                              className={`px-3 py-1 bg-gradient-to-r ${getStatusColor(
-                                selectedSession.status
-                              )} rounded-full text-sm font-medium`}
+                              className={`px-2 py-1 rounded text-xs font-medium ${
+                                selectedSession.room.isAvailable
+                                  ? "bg-emerald-600/20 text-emerald-300"
+                                  : "bg-amber-600/20 text-amber-300"
+                              }`}
                             >
-                              {getStatusLabel(selectedSession.status)}
+                              {selectedSession.room.isAvailable
+                                ? "متاحة"
+                                : "غير متاحة"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-400">ملاحظات:</span>
+                            <span className="font-bold text-white">
+                              {selectedSession.room.notes || "لا يوجد"}
                             </span>
                           </div>
                         </div>
@@ -1105,7 +1191,8 @@ ${
 
                     <div className="space-y-4">
                       <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4">
-                        <h3 className="text-lg font-bold text-white mb-3">
+                        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                          <Clock size={18} />
                           تفاصيل الجلسة
                         </h3>
                         <div className="space-y-3">
@@ -1138,11 +1225,23 @@ ${
                               {selectedSession.totalHours.toFixed(2)} ساعة)
                             </span>
                           </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-400">الحالة:</span>
+                            <span
+                              className={`px-3 py-1 bg-gradient-to-r ${getStatusColor(
+                                selectedSession.status
+                              )} rounded-full text-sm font-medium flex items-center gap-2`}
+                            >
+                              {getStatusIcon(selectedSession.status)}
+                              {getStatusLabel(selectedSession.status)}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4">
-                        <h3 className="text-lg font-bold text-white mb-3">
+                        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                          <DollarSign size={18} />
                           الحسابات المالية
                         </h3>
                         <div className="space-y-3">
@@ -1164,6 +1263,17 @@ ${
                               {formatCurrency(selectedSession.discount)}
                             </span>
                           </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-400">
+                              المجموع قبل الخصم:
+                            </span>
+                            <span className="font-bold text-white">
+                              {formatCurrency(
+                                selectedSession.sessionPrice +
+                                  selectedSession.itemsPrice
+                              )}
+                            </span>
+                          </div>
                           <div className="flex items-center justify-between border-t border-gray-700/50 pt-3">
                             <span className="text-gray-400 text-lg">
                               السعر النهائي:
@@ -1179,9 +1289,10 @@ ${
 
                   {selectedSession.items &&
                     selectedSession.items.length > 0 && (
-                      <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4">
-                        <h3 className="text-lg font-bold text-white mb-4">
-                          المنتجات المطلوبة
+                      <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4 mb-6">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                          <Package size={18} />
+                          المنتجات المطلوبة ({selectedSession.items.length})
                         </h3>
                         <div className="overflow-x-auto">
                           <table className="w-full">
@@ -1202,37 +1313,40 @@ ${
                                 <th className="py-3 px-4 text-right text-gray-300 font-semibold">
                                   الإجمالي
                                 </th>
+                                <th className="py-3 px-4 text-right text-gray-300 font-semibold">
+                                  وقت الإضافة
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
                               {selectedSession.items.map((item, index) => (
                                 <tr
-                                  key={item.id || index}
-                                  className="border-b border-gray-700/30"
+                                  key={item.product?.id || index}
+                                  className="border-b border-gray-700/30 hover:bg-gray-800/30 transition-colors"
                                 >
                                   <td className="py-3 px-4">
                                     <div className="flex items-center gap-3">
                                       <div className="p-2 bg-gradient-to-br from-blue-600/20 to-cyan-600/20 rounded-lg">
-                                        <Gamepad2
+                                        <Package
                                           size={16}
                                           className="text-blue-400"
                                         />
                                       </div>
                                       <div>
                                         <p className="font-medium text-white">
-                                          {item.item?.name || "غير معروف"}
+                                          {item.product?.name || "غير معروف"}
                                         </p>
-                                        {item.item?.notes && (
-                                          <p className="text-xs text-gray-400">
-                                            {item.item.notes}
-                                          </p>
-                                        )}
+                                        <p className="text-xs text-gray-400">
+                                          {item.product?.notes ||
+                                            "لا يوجد ملاحظات"}
+                                        </p>
                                       </div>
                                     </div>
                                   </td>
                                   <td className="py-3 px-4">
                                     <span className="px-2 py-1 bg-gradient-to-r from-amber-600/20 to-orange-600/20 text-amber-300 rounded text-xs border border-amber-600/30">
-                                      {item.item?.itemType?.name || "غير معروف"}
+                                      {item.product?.itemType?.name ||
+                                        "غير معروف"}
                                     </span>
                                   </td>
                                   <td className="py-3 px-4">
@@ -1250,6 +1364,11 @@ ${
                                       {formatCurrency(item.totalPrice)}
                                     </span>
                                   </td>
+                                  <td className="py-3 px-4">
+                                    <span className="text-sm text-gray-400">
+                                      {formatDateTime(item.addedTime)}
+                                    </span>
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
@@ -1259,9 +1378,9 @@ ${
                                   colSpan="4"
                                   className="py-3 px-4 text-right text-gray-300 font-bold"
                                 >
-                                  المجموع النهائي:
+                                  المجموع النهائي للمنتجات:
                                 </td>
-                                <td className="py-3 px-4">
+                                <td colSpan="2" className="py-3 px-4">
                                   <span className="text-xl font-bold text-emerald-400">
                                     {formatCurrency(selectedSession.itemsPrice)}
                                   </span>
@@ -1273,14 +1392,14 @@ ${
                       </div>
                     )}
 
-                  {selectedSession.notes && (
-                    <div className="mt-6 bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4">
-                      <h3 className="text-lg font-bold text-white mb-3">
-                        ملاحظات
-                      </h3>
-                      <p className="text-gray-300">{selectedSession.notes}</p>
-                    </div>
-                  )}
+                  <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 rounded-xl border border-gray-700/50 p-4">
+                    <h3 className="text-lg font-bold text-white mb-3">
+                      ملاحظات الجلسة
+                    </h3>
+                    <p className="text-gray-300 p-3 bg-gray-800/30 rounded-lg">
+                      {selectedSession.notes || "لا توجد ملاحظات لهذه الجلسة"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

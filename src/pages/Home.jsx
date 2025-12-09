@@ -601,15 +601,47 @@ export default function Home() {
 
   const handleCompleteSession = async (session) => {
     try {
-      Swal.fire({
+      const addCurrentTimeResult = await Swal.fire({
+        title: "إضافة السعر حتى الوقت الحالي؟",
+        html: `
+        <div style="text-align: right;">
+          <p><strong>العميل:</strong> ${session.customerName}</p>
+          <p><strong>الغرفة:</strong> ${session.roomNumber}</p>
+        </div>
+      `,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#10b981",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "نعم، أضف حتى الآن",
+        cancelButtonText: "لا، حسب وقت الانتهاء",
+        background: "#0f172a",
+        color: "#e2e8f0",
+        backdrop: "rgba(0, 0, 0, 0.7)",
+        reverseButtons: true,
+        customClass: {
+          cancelButton: "cancel-button",
+        },
+      });
+
+      if (addCurrentTimeResult.isDismissed) {
+        return;
+      }
+
+      const paymentForTimeNow = addCurrentTimeResult.isConfirmed;
+
+      const confirmResult = await Swal.fire({
         title: "تأكيد إتمام الجلسة",
         html: `
-          <div style="text-align: right;">
-            <p>هل أنت متأكد من إتمام الجلسة وطباعة الفاتورة؟</p>
-            <p><strong>العميل:</strong> ${session.customerName}</p>
-            <p><strong>الغرفة:</strong> ${session.roomNumber}</p>
-          </div>
-        `,
+        <div style="text-align: right;">
+          <p>هل أنت متأكد من إتمام الجلسة وطباعة الفاتورة؟</p>
+          <p><strong>العميل:</strong> ${session.customerName}</p>
+          <p><strong>الغرفة:</strong> ${session.roomNumber}</p>
+          <p><strong>حساب السعر:</strong> ${
+            paymentForTimeNow ? "حتى الوقت الحالي" : "حسب وقت الانتهاء"
+          }</p>
+        </div>
+      `,
         icon: "question",
         showCancelButton: true,
         confirmButtonColor: "#10b981",
@@ -620,104 +652,113 @@ export default function Home() {
         color: "#e2e8f0",
         backdrop: "rgba(0, 0, 0, 0.7)",
         reverseButtons: true,
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          try {
-            Swal.fire({
-              title: "جاري إتمام الجلسة...",
-              text: "يرجى الانتظار",
-              allowOutsideClick: false,
-              didOpen: () => {
-                Swal.showLoading();
-              },
-              background: "#0f172a",
-              color: "#e2e8f0",
-              backdrop: "rgba(0, 0, 0, 0.7)",
-            });
-
-            const sessionResponse = await axiosInstance.get(
-              `/api/Sessions/Get/${session.id}`
-            );
-            const sessionData = sessionResponse.data;
-
-            const receiptData = {
-              id: session.id,
-              customerName: session.customerName,
-              customerPhone: session.phone,
-              roomNumber: session.roomNumber,
-              sessionPrice: sessionData.sessionPrice || 0,
-              itemsPrice: sessionData.itemsPrice || 0,
-              discount: sessionData.discount || 0,
-              finalPrice: sessionData.finalPrice || 0,
-              items: sessionData.items || [],
-              date: new Date().toLocaleString("ar-EG", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              }),
-              orderNumber: `SESS-${session.id}`,
-              sessionCode: sessionData.sessionCode || "",
-              startTime: formatApiTimeToArabic(sessionData.startTime),
-              endTime: sessionData.endTime
-                ? formatApiTimeToArabic(sessionData.endTime)
-                : "",
-              totalHours: sessionData.totalHours || 0,
-            };
-
-            // ✅ هنا التعديل المطلوب: إضافة paymentForTimeNow كـ query parameter
-            await axiosInstance.put(
-              `/api/Sessions/Payment/${session.id}?paymentForTimeNow=true`
-            );
-
-            Swal.close();
-
-            await printSessionReceipt(receiptData);
-
-            await fetchSessions();
-
-            Swal.fire({
-              icon: "success",
-              title: "تم إتمام الجلسة بنجاح",
-              html: `
-                <div style="text-align: right;">
-                  <p>تم تسجيل الدفع بنجاح</p>
-                  <p>تمت طباعة الفاتورة للعميل ${session.customerName}</p>
-                  <p><strong>المبلغ الإجمالي:</strong> ${
-                    sessionData.finalPrice || 0
-                  } ج.م</p>
-                </div>
-              `,
-              timer: 3000,
-              showConfirmButton: false,
-              background: "#0f172a",
-              color: "#e2e8f0",
-              backdrop: "rgba(0, 0, 0, 0.7)",
-            });
-          } catch (error) {
-            console.error("Error completing session:", error);
-            Swal.close();
-
-            Swal.fire({
-              icon: "error",
-              title: "خطأ في إتمام الجلسة",
-              text: `حدث خطأ أثناء إتمام الجلسة: ${
-                error.response?.data?.message || error.message
-              }`,
-              timer: 3000,
-              showConfirmButton: true,
-              confirmButtonText: "حاول مرة أخرى",
-              background: "#0f172a",
-              color: "#e2e8f0",
-              backdrop: "rgba(0, 0, 0, 0.7)",
-            });
-          }
-        }
       });
+
+      if (confirmResult.isConfirmed) {
+        try {
+          Swal.fire({
+            title: "جاري إتمام الجلسة...",
+            text: "يرجى الانتظار",
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+            background: "#0f172a",
+            color: "#e2e8f0",
+            backdrop: "rgba(0, 0, 0, 0.7)",
+          });
+
+          await axiosInstance.put(
+            `/api/Sessions/Payment/${session.id}?paymentForTimeNow=${paymentForTimeNow}`
+          );
+
+          const sessionResponse = await axiosInstance.get(
+            `/api/Sessions/Get/${session.id}`
+          );
+          const sessionData = sessionResponse.data;
+
+          const receiptData = {
+            id: session.id,
+            customerName: session.customerName,
+            customerPhone: session.phone,
+            roomNumber: session.roomNumber,
+            sessionPrice: sessionData.sessionPrice || 0,
+            itemsPrice: sessionData.itemsPrice || 0,
+            discount: sessionData.discount || 0,
+            finalPrice: sessionData.finalPrice || 0,
+            items: sessionData.items || [],
+            date: new Date().toLocaleString("ar-EG", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            }),
+            orderNumber: `SESS-${session.id}`,
+            sessionCode: sessionData.sessionCode || "",
+            startTime: formatApiTimeToArabic(sessionData.startTime),
+            endTime: sessionData.endTime
+              ? formatApiTimeToArabic(sessionData.endTime)
+              : "",
+            totalHours: sessionData.totalHours || 0,
+          };
+
+          Swal.close();
+
+          await printSessionReceipt(receiptData);
+
+          await fetchSessions();
+
+          Swal.fire({
+            icon: "success",
+            title: "تم إتمام الجلسة بنجاح",
+            html: `
+            <div style="text-align: right;">
+              <p>تم تسجيل الدفع بنجاح</p>
+              <p>تمت طباعة الفاتورة للعميل ${session.customerName}</p>
+              <p><strong>طريقة الحساب:</strong> ${
+                paymentForTimeNow ? "حتى الوقت الحالي" : "حسب وقت الانتهاء"
+              }</p>
+              <p><strong>المبلغ الإجمالي:</strong> ${
+                sessionData.finalPrice || 0
+              } ج.م</p>
+            </div>
+          `,
+            timer: 3000,
+            showConfirmButton: false,
+            background: "#0f172a",
+            color: "#e2e8f0",
+            backdrop: "rgba(0, 0, 0, 0.7)",
+          });
+        } catch (error) {
+          console.error("Error completing session:", error);
+          Swal.close();
+
+          Swal.fire({
+            icon: "error",
+            title: "خطأ في إتمام الجلسة",
+            text: `حدث خطأ أثناء إتمام الجلسة: ${
+              error.response?.data?.message || error.message
+            }`,
+            timer: 3000,
+            showConfirmButton: true,
+            confirmButtonText: "حاول مرة أخرى",
+            background: "#0f172a",
+            color: "#e2e8f0",
+            backdrop: "rgba(0, 0, 0, 0.7)",
+          });
+        }
+      }
     } catch (error) {
       console.error("Error in handleCompleteSession:", error);
+      Swal.fire({
+        icon: "error",
+        title: "حدث خطأ",
+        text: "حدث خطأ غير متوقع",
+        background: "#0f172a",
+        color: "#e2e8f0",
+      });
     }
   };
 
