@@ -26,6 +26,22 @@ export default function SessionCard({
     type: "countup",
   });
 
+  const getSessionStatusText = (status) => {
+    const statusMap = {
+      Pending: "قيد الانتظار",
+      Active: "نشطة",
+      Finished: "منتهية",
+      Cancelled: "ملغية",
+      Payed: "مدفوعة",
+    };
+    return statusMap[status] || status;
+  };
+
+  const [uiStatus, setUiStatus] = useState(session.status);
+  const [uiStatusText, setUiStatusText] = useState(
+    session.statusText || getSessionStatusText(session.status)
+  );
+
   useEffect(() => {
     if (timerValue) {
       setLocalTimer({
@@ -34,8 +50,23 @@ export default function SessionCard({
         seconds: timerValue.seconds || 0,
         type: timerValue.type || "countup",
       });
+
+      if (timerValue.type === "countup" || timerValue.type === "countdown") {
+        if (uiStatus !== "Active") {
+          setUiStatus("Active");
+          setUiStatusText("نشطة");
+        }
+      } else if (timerValue.type === "finished") {
+        if (uiStatus !== "Finished") {
+          setUiStatus("Finished");
+          setUiStatusText("منتهية");
+        }
+      } else if (timerValue.type === "upcoming" && uiStatus === "Active") {
+        setUiStatus("Pending");
+        setUiStatusText("قيد الانتظار");
+      }
     }
-  }, [timerValue]);
+  }, [timerValue, uiStatus]);
 
   const formatTime = (time) => {
     return time < 10 ? `0${time}` : time;
@@ -221,9 +252,9 @@ export default function SessionCard({
     );
   };
 
-  const statusInfo = getSessionStatusInfo(session.status);
+  const statusInfo = getSessionStatusInfo(uiStatus);
 
-  const isPending = session.status === "Pending";
+  const isPending = uiStatus === "Pending";
 
   return (
     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl overflow-hidden border border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] group relative">
@@ -256,7 +287,7 @@ export default function SessionCard({
               className={`inline-block w-2 h-2 ${statusInfo.dotColor} rounded-full animate-pulse`}
             ></span>
             <span className={`${statusInfo.color} text-xs font-medium`}>
-              {session.statusText || statusInfo.text}
+              {uiStatusText}
             </span>
           </div>
         </div>

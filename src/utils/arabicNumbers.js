@@ -190,3 +190,75 @@ export const formatDuration = (durationStr) => {
 
   return `${toArabicNumbers(number)} ساعة`;
 };
+
+export const getUiSessionStatus = (timerValue, originalStatus) => {
+  if (!timerValue) return originalStatus;
+
+  if (timerValue.type === "countup" || timerValue.type === "countdown") {
+    return "Active";
+  } else if (timerValue.type === "finished") {
+    return "Finished";
+  } else if (timerValue.type === "upcoming") {
+    return "Pending";
+  }
+
+  return originalStatus;
+};
+
+export const getUiSessionStatusText = (timerValue, originalStatusText) => {
+  if (!timerValue) return originalStatusText;
+
+  if (timerValue.type === "countup" || timerValue.type === "countdown") {
+    return "نشطة";
+  } else if (timerValue.type === "finished") {
+    return "منتهية";
+  } else if (timerValue.type === "upcoming") {
+    return "قيد الانتظار";
+  }
+
+  return originalStatusText;
+};
+
+export const getUiRoomStatus = (
+  timerValue,
+  roomNumber,
+  sessions,
+  originalIsAvailable
+) => {
+  if (!timerValue || !sessions) return originalIsAvailable;
+
+  const roomSession = sessions.find(
+    (session) => session.roomNumber === roomNumber
+  );
+  if (!roomSession) return originalIsAvailable;
+
+  if (timerValue.type === "countup" || timerValue.type === "countdown") {
+    return false;
+  } else if (timerValue.type === "finished") {
+    return true;
+  }
+
+  return originalIsAvailable;
+};
+
+export const getUiRoomStatusText = (
+  timerValue,
+  roomNumber,
+  sessions,
+  originalStatusText
+) => {
+  if (!timerValue || !sessions) return originalStatusText;
+
+  const roomSession = sessions.find(
+    (session) => session.roomNumber === roomNumber
+  );
+  if (!roomSession) return originalStatusText;
+
+  if (timerValue.type === "countup" || timerValue.type === "countdown") {
+    return "مشغولة";
+  } else if (timerValue.type === "finished") {
+    return "متاحة";
+  }
+
+  return originalStatusText;
+};

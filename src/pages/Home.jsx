@@ -94,6 +94,12 @@ export default function Home() {
       if (shouldDisplaySession(session)) {
         const timerValue = calculateTimerValue(session);
         newTimerValues[session.id] = timerValue;
+
+        if (timerValue.type === "countup" || timerValue.type === "countdown") {
+          console.log(`الجلسة ${session.id} أصبحت نشطة في الـ UI`);
+        } else if (timerValue.type === "finished") {
+          console.log(`الجلسة ${session.id} أصبحت منتهية في الـ UI`);
+        }
       }
     });
 
@@ -1454,7 +1460,11 @@ ${
             </>
           )}
 
-          <RoomsStatus availableRooms={availableRooms} />
+          <RoomsStatus
+            availableRooms={availableRooms}
+            sessions={sessions}
+            timerValues={timerValues}
+          />
 
           <CashierModal
             isOpen={cashierState.isOpen}
